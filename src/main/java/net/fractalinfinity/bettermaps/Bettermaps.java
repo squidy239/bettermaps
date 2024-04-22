@@ -74,7 +74,6 @@ public final class Bettermaps extends JavaPlugin implements Listener {
     public void mapevent(MapInitializeEvent mapp) {
         int id = mapp.getMap().getId();
         System.out.println("map id " + id + " initalized");
-        Plugin plugin = this;
         Player[] playr = {null};
         MapView[] mapview = {null};
         String imgpath = "./mapimg";
@@ -82,7 +81,6 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> setiimgbufferfromvid(id, imgpath), 1, 1);
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> setiimgbufferfromfile(id, imgpath), 1, 20);
         mapp.getMap().getRenderers().clear();
-        final int[] num = {0};
         mapp.getMap().addRenderer(new MapRenderer() {
             @Override
             public void render(@NotNull MapView mapView, @NotNull MapCanvas mapCanvas, @NotNull Player player) {
@@ -90,7 +88,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                     try {
                         mapCanvas.drawImage(0, 0, (BufferedImage) bufferdict.get(id));
                     } catch (Exception e){
-                        System.out.println("eeeee");
+                        throw new RuntimeException(e);
                     }
                     playr[0] = player;
                     mapview[0] = mapView;
