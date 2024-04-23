@@ -31,6 +31,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         try {
             Files.createDirectories(Paths.get("mapimg/images"));
             Files.createDirectories(Paths.get("mapimg/vids"));
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
