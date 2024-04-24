@@ -1,0 +1,22 @@
+<!DOCTYPE html> 
+<html>
+
+<head>
+<title>Image upload</title>
+<link rel="icon" href="/icon.jpg">
+</head>
+
+<body>
+    <div id="main" style="text-align: center; width: 100vw; height: 100vh;">
+    <h1>Image upload</h1>
+    <form action="/upload" enctype='multipart/form-data' method="post" style="height: 90%;width: 100%;">
+        <input type="number" name="id" class="blob" required style="height: 10%;">
+        <input type="file" name="image" class="blob" accept="image/*,video/mp4" required style="height: 10%;">
+        <input type="submit" class="blob" style="height: 10%;width: 25%; margin-left: auto; margin-right: auto;">
+    </form>
+    </div>
+</html>
+<style>.blob{margin: auto; width: 75%; height: 10%; border-radius: 1vh;background-color: aquamarine; border: 2px solid black; text-align: center; margin-top: 1.5%;margin-bottom: 1.5%;}
+#main{background-image: url("bg.jpg"); background-size: cover; overflow: hidden;} 
+body{margin: 0; padding: 0; overflow: hidden;}</style>
+

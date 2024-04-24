@@ -8,7 +8,6 @@ import org.bukkit.event.server.MapInitializeEvent;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.json.simple.JSONObject;
@@ -23,8 +22,6 @@ import java.nio.file.Paths;
 public final class Bettermaps extends JavaPlugin implements Listener {
     JSONObject bufferdict = new JSONObject();
     JSONObject framedict = new JSONObject();
-
-    boolean smoothtoggle = true;
 
     @Override
     public void onEnable() {

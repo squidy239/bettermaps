@@ -1,0 +1,5 @@
+fastapi
+uvicorn[standerd]
+opencv-python
+python-multipart
+pillow
