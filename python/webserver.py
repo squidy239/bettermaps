@@ -7,7 +7,7 @@ import shutil
 from PIL import Image
 import io
 import cv2
-shutil.rmtree("temp") if Path("temp").exists() else None
+#shutil.rmtree("temp") if Path("temp").exists() else None
 Path("temp").mkdir( exist_ok=True)
 app = FastAPI()
 with open("python/home.html", "r") as f:
@@ -31,10 +31,7 @@ async def upload(id:Annotated[int, Form()],image:UploadFile):
     if image.content_type == 'video/mp4': 
         with open("temp/"+str(id)+".mp4", "wb") as f:
             f.write(await image.read())
-        try:
-            shutil.rmtree(vidpath+str(id))
-        except:
-            pass
+            #shutil.rmtree(vidpath+str(id))
         Path(vidpath+str(id)).mkdir( exist_ok=True)
         vidObj = cv2.VideoCapture("temp/"+str(id)+".mp4")
         count = 0
@@ -44,8 +41,8 @@ async def upload(id:Annotated[int, Form()],image:UploadFile):
             await prossessframe(id,count,frame,success)
             count += 1
         print("prossesed "+str(count)+ " frames for map id "+str(id))
-        shutil.rmtree("temp")
-        Path("temp").mkdir( exist_ok=True)
+        #shutil.rmtree("temp")
+        #Path("temp").mkdir( exist_ok=True)
         return HTMLResponse(content='<meta http-equiv="refresh" content="0; URL=/" />', status_code=200)
     elif image.content_type == 'image/jpeg' or image.content_type == 'image/jpg' or image.content_type == 'image/png':
         print("got an image")
