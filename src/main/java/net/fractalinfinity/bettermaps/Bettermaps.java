@@ -60,23 +60,19 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         Player[] playr = {null};
         MapCanvas[] mc = {null};
         MapView[] mapview = {null};
-        boolean[] onn = {true};
         String imgpath = "./mapimg";
         int[] m = {1};
         if (new File(imgpath + "/vids/" + id).exists()){m[0] = new File(imgpath + "/vids/" + id).listFiles().length;}
         Bukkit.getScheduler().runTaskTimer(this, () -> playr[0].sendMap(mapview[0]), 1, 1);
-        scheduler.scheduleWithFixedDelay(()->{if (new File(imgpath + "/vids/" + id).exists()){onn[0] = true;m[0] = new File(imgpath + "/vids/" + id).listFiles().length;}},5000,5000,TimeUnit.SECONDS);
+        scheduler.scheduleWithFixedDelay(()->{if (new File(imgpath + "/vids/" + id).exists()){m[0] = new File(imgpath + "/vids/" + id).listFiles().length;}},5000,5000,TimeUnit.SECONDS);
         scheduler.scheduleWithFixedDelay(() -> setiimgbufferfromfile(id, imgpath), 500, 500, TimeUnit.MILLISECONDS);
         mapp.getMap().getRenderers().clear();
         mapp.getMap().addRenderer(new MapRenderer() {
             @Override
             public void render(@NotNull MapView mapView, @NotNull MapCanvas mapCanvas, @NotNull Player player) {
-                if (onn[0] == true) {
                     playr[0] = player;
                     mapview[0] = mapView;
-                    onn[0] = false;
                     mc[0] = mapCanvas;
-                }
             }
         });
         scheduler.scheduleAtFixedRate(() -> {
