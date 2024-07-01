@@ -1,4 +1,4 @@
 name: bettermaps
-version: '0.4'
+version: '${project.version}'
 main: net.fractalinfinity.bettermaps.Bettermaps
 api-version: '1.20'
