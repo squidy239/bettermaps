@@ -1,25 +1,24 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html>
 
 <head>
-<title>Image upload</title>
-<link rel="icon" href="/icon.jpg">
+    <title>Image upload</title>
+    <link rel="icon" href="/icon.jpg">
 </head>
 
 <body>
-    <div id="main" style="text-align: center; width: 100vw; height: 100vh;">
+<div id="main" style="text-align: center; width: 100vw; height: 100vh;">
     <h1>Image upload</h1>
-    <form action="/upload" enctype='multipart/form-data' method="post" style="height: 90%;width: 100%;" onsubmit="submit()">
+    <form action="/upload" enctype='multipart/form-data' method="post" style="height: 90%;width: 100%;" onsubmit="alert('Uploading and processioning, please wait. this may take a while or not work at all. if it dosent like your mp4, try changing the codec.')">
         <input type="number" name="id" class="blob" required style="height: 10%;">
         <input type="file" name="media" class="blob" accept="image/*,video/mp4" required style="height: 10%;">
+        <input type="text" name="multimapconfig" class="blob"  style="height: 5%;" placeholder="multimap config ">
         <input type="submit" class="blob" style="height: 10%;width: 25%; margin-left: auto; margin-right: auto;">
     </form>
-    </div>
+    (multimap config format is id,id,id | id,id,id for a 3 by 2 map display. | means new row)
+</div>
 </html>
-<script>
-    function submit(){
-    alert('Uploading and processioning, please wait')}
-</script>
+
 <style>.blob{margin: auto; width: 75%; height: 10%; border-radius: 1vh;background-color: aquamarine; border: 2px solid black; text-align: center; margin-top: 1.5%;margin-bottom: 1.5%;}
 #main{background-image: url("bg.jpg"); background-size: cover; overflow: hidden;} 
 body{margin: 0; padding: 0; overflow: hidden;}</style>
