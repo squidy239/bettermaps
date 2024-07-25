@@ -10,6 +10,7 @@ import org.bukkit.event.server.MapInitializeEvent;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jcodec.api.FrameGrab;
 import org.jcodec.api.JCodecException;
@@ -29,10 +30,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -88,7 +86,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                         mmconfigdict.put(mmtable[i][n], new int[]{128 * List.of(mmtable[i]).indexOf(mmtable[i][n]), 128 * i, Integer.parseInt(mmtable[0][0])});
                     }
                 }
-                System.out.println((((int[]) mmconfigdict.get("1"))[0]));
+                //System.out.println((((int[]) mmconfigdict.get("1"))[0]));
                 Width = mmtable[0].length * 128;
                 Height = mmtable.length * 128;
                 vidpath = "mapimg/multimapvids/";
@@ -176,7 +174,8 @@ public final class Bettermaps extends JavaPlugin implements Listener {
 
             File outputFile = new File(outputDir, frameNumber + ".png");
             ImageIO.write(bufferedImage, "png", outputFile);
-            System.out.println("Saved frame_" + frameNumber + ".png");
+
+            //System.out.println("Saved frame_" + frameNumber + ".png");
         } catch (IOException e) {
             throw new RuntimeException("Failed to save frame_" + frameNumber + ".png", e);
         }
@@ -238,12 +237,11 @@ public final class Bettermaps extends JavaPlugin implements Listener {
             }
         }
     }
-
     @EventHandler
     public void mapevent(MapInitializeEvent mapp) {
         int id = mapp.getMap().getId();
         getLogger().info("map id " + id + " initalized");
-        Player[] playr = {null};
+        List<Player> playrl = new ArrayList<Player>();
         MapCanvas[] mc = {null};
         MapView[] mapview = {null};
         String imgpath = "./mapimg";
@@ -258,11 +256,15 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         } else if (new File(imgpath + "/vids/" + id).exists()) {
             m[0] = new File(imgpath + "/vids/" + id).listFiles().length;
         }
-        scheduler.scheduleAtFixedRate(()->{
-            rendertoggle[0] = mapisclose(mapp.getMap().getCenterX(),mapp.getMap().getCenterZ(),256);
-        },1000,250,TimeUnit.MILLISECONDS);
-
-        runner.scheduleAtFixedRate(() -> {if (!rendertoggle[0]){return;};playr[0].sendMap(mapview[0]);}, 500, 50,TimeUnit.MILLISECONDS);
+        // sends player the map
+        scheduler.scheduleAtFixedRate(() -> {
+            for (int i = 0; i < playrl.size(); i++)
+            {
+                playrl.get(i).sendMap(mapview[0]);
+                if (!playrl.get(i).isOnline()){playrl.remove(i);}
+            };
+            if (playrl.isEmpty()){rendertoggle[0] = false;} else {rendertoggle[0] = true;};
+        },500,50,TimeUnit.MILLISECONDS);
 
         scheduler.scheduleWithFixedDelay(() -> {
             if (!rendertoggle[0]){return;};
@@ -276,11 +278,11 @@ public final class Bettermaps extends JavaPlugin implements Listener {
             }
         }, 100, 1000, TimeUnit.MILLISECONDS);
         scheduler.scheduleWithFixedDelay(() -> {if (!rendertoggle[0]){return;};setiimgbufferfromfile(id, imgpath);}, 20, 20, TimeUnit.SECONDS);
-        mapp.getMap().getRenderers().clear();
+        //mapp.getMap().getRenderers().size();
         mapp.getMap().addRenderer(new MapRenderer() {
             @Override
             public void render(@NotNull MapView mapView, @NotNull MapCanvas mapCanvas, @NotNull Player player) {
-                playr[0] = player;
+                if (!(playrl.contains(player))){playrl.add(player);}
                 mapview[0] = mapView;
                 mc[0] = mapCanvas;
             }
@@ -343,17 +345,6 @@ public final class Bettermaps extends JavaPlugin implements Listener {
 
     }
 
-    private boolean mapisclose(int x, int z, int distance){
-        List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
-        for (int i = 0; i < players.size(); i++){
-            int x1 = (int) players.get(i).getX();
-            int z1 = (int) players.get(i).getZ();
-            if (Math.sqrt((z1 - z) * (z1 - z) + (x1 - x) * (x1 - x)) < 256){
-                return true;
-            }
-        };
-        return false;
-    }
 
     @Override
     public void onDisable() {
