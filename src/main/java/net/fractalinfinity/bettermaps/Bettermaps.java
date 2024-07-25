@@ -2,6 +2,7 @@ package net.fractalinfinity.bettermaps;
 
 
 import net.coobird.thumbnailator.Thumbnails;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -28,6 +29,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -42,6 +44,8 @@ public final class Bettermaps extends JavaPlugin implements Listener {
     static JSONObject mmconfigdict = new JSONObject();
     static ScheduledExecutorService scheduler
             = Executors.newScheduledThreadPool(8);
+    static ScheduledExecutorService runner
+            = Executors.newScheduledThreadPool(2);
     JSONObject bufferdict = new JSONObject();
     JSONObject framedict = new JSONObject();
 
@@ -239,22 +243,29 @@ public final class Bettermaps extends JavaPlugin implements Listener {
     public void mapevent(MapInitializeEvent mapp) {
         int id = mapp.getMap().getId();
         getLogger().info("map id " + id + " initalized");
-        //Player[] playr = {null};
+        Player[] playr = {null};
         MapCanvas[] mc = {null};
-        //MapView[] mapview = {null};
+        MapView[] mapview = {null};
         String imgpath = "./mapimg";
         int[] m = {1};
         int[] po1 = {0};
         int[] po2 = {0};
         int[] mmvid = {0};
+        boolean[] rendertoggle = {true};
         setiimgbufferfromfile(id, imgpath);
         if (mmconfigdict.containsKey(String.valueOf(id))) {
             m[0] = new File(imgpath + "/multimapvids/" + ((int[]) mmconfigdict.get(String.valueOf(id)))[2]).listFiles().length;
         } else if (new File(imgpath + "/vids/" + id).exists()) {
             m[0] = new File(imgpath + "/vids/" + id).listFiles().length;
         }
-        //Bukkit.getScheduler().runTaskTimer(this, () -> playr[0].sendMap(mapview[0]), 1, 1);
+        scheduler.scheduleAtFixedRate(()->{
+            rendertoggle[0] = mapisclose(mapp.getMap().getCenterX(),mapp.getMap().getCenterZ(),256);
+        },1000,250,TimeUnit.MILLISECONDS);
+
+        runner.scheduleAtFixedRate(() -> {if (!rendertoggle[0]){return;};playr[0].sendMap(mapview[0]);}, 500, 50,TimeUnit.MILLISECONDS);
+
         scheduler.scheduleWithFixedDelay(() -> {
+            if (!rendertoggle[0]){return;};
             if (mmconfigdict.containsKey(String.valueOf(id))) {
                 mmvid[0] = ((int[]) mmconfigdict.get(String.valueOf(id)))[2];
                 m[0] = new File(imgpath + "/multimapvids/" + mmvid[0]).listFiles().length;
@@ -264,17 +275,18 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                 m[0] = new File(imgpath + "/vids/" + id).listFiles().length;
             }
         }, 100, 1000, TimeUnit.MILLISECONDS);
-        scheduler.scheduleWithFixedDelay(() -> setiimgbufferfromfile(id, imgpath), 20, 20, TimeUnit.SECONDS);
+        scheduler.scheduleWithFixedDelay(() -> {if (!rendertoggle[0]){return;};setiimgbufferfromfile(id, imgpath);}, 20, 20, TimeUnit.SECONDS);
         mapp.getMap().getRenderers().clear();
         mapp.getMap().addRenderer(new MapRenderer() {
             @Override
             public void render(@NotNull MapView mapView, @NotNull MapCanvas mapCanvas, @NotNull Player player) {
-                //playr[0] = player;
-                //mapview[0] = mapView;
+                playr[0] = player;
+                mapview[0] = mapView;
                 mc[0] = mapCanvas;
             }
         });
         scheduler.scheduleWithFixedDelay(() -> {
+            if (!rendertoggle[0]){return;};
             //System.out.println("mmvid: "+mmvid[0] + "  exists = "+ Files.exists(Paths.get(imgpath + "/multimapvids/" + mmvid[0])) + "   and map id:" + id);
             if (mmvid[0] != 0 && Files.exists(Paths.get(imgpath + "/multimapvids/" + mmvid[0]))) {
 
@@ -329,6 +341,18 @@ public final class Bettermaps extends JavaPlugin implements Listener {
             }
         }, 1000, 50, TimeUnit.MILLISECONDS);
 
+    }
+
+    private boolean mapisclose(int x, int z, int distance){
+        List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
+        for (int i = 0; i < players.size(); i++){
+            int x1 = (int) players.get(i).getX();
+            int z1 = (int) players.get(i).getZ();
+            if (Math.sqrt((z1 - z) * (z1 - z) + (x1 - x) * (x1 - x)) < 256){
+                return true;
+            }
+        };
+        return false;
     }
 
     @Override
