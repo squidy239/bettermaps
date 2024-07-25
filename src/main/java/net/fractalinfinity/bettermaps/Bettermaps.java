@@ -1,3 +1,4 @@
+
 package net.fractalinfinity.bettermaps;
 
 
@@ -42,8 +43,6 @@ public final class Bettermaps extends JavaPlugin implements Listener {
     static JSONObject mmconfigdict = new JSONObject();
     static ScheduledExecutorService scheduler
             = Executors.newScheduledThreadPool(8);
-    static ScheduledExecutorService runner
-            = Executors.newScheduledThreadPool(2);
     JSONObject bufferdict = new JSONObject();
     JSONObject framedict = new JSONObject();
 
