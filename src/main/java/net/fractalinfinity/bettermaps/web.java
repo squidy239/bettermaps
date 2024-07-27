@@ -7,6 +7,7 @@ import javax.imageio.ImageIO;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.Part;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,44 +21,106 @@ import static net.fractalinfinity.bettermaps.videoprocessor.extractFramez;
 import static spark.Spark.*;
 
 public class web {
-    public void runweb() throws IOException {
+
+    public static void main(String[] args) throws IOException {
+        runweb();
+    }
+    public static void runweb() throws IOException {
         System.out.println("web");
         port(4567);
         // Serve static files (home.html)
         // Route to serve home.html
+        ClassLoader classloader = web.class.getClassLoader();
+        InputStream is = classloader.getResourceAsStream("home.html");
+
+        String htmlpage = new BufferedReader(new InputStreamReader(is))
+                .lines().collect(Collectors.joining("\n"));
         get("/", (req, res) -> {
             res.type("text/html");
-            ClassLoader classloader = Bettermaps.class.getClassLoader();
-            InputStream is = classloader.getResourceAsStream("home.html");
-
-            return new BufferedReader(new InputStreamReader(is))
-                    .lines().collect(Collectors.joining("\n"));
+            return htmlpage;
+        });
+        before((request, response) -> {
+            if (request.raw().getContentType() != null && request.raw().getContentType().contains("multipart/form-data")) {
+                MultipartConfigElement multipartConfigElement = new MultipartConfigElement("mapimg/temp",
+                        1024L * 1024 * 5000, // Max file size (5000 MB)
+                        1024L * 1024 * 5000, // Max request size (5000 MB)
+                        1024 * 1024 * 200); // File size threshold (200 MB)
+                request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
+            }
         });
 
         // Route to handle file upload
         post("/upload", "multipart/form-data", (request, response) -> {
+            try {
+                long[][] mapconfig = table(IOUtils.toString(request.raw().getPart("mapconfig").getInputStream()), "|", ",");
+                String name = IOUtils.toString(request.raw().getPart("name").getInputStream()).replaceAll("[^a-zA-Z0-9]", "");
+                Part uploadedFile = request.raw().getPart("media");
+                int Width = mapconfig[0].length * 128;
+                int Height = mapconfig.length * 128;
+                String mediapath = "mapimg/media/";
+                if (uploadedFile.getContentType().contains("image")) {
+                    System.out.println("image Upload");
+
+                    ImageIO.write(Thumbnails.of(uploadedFile.getInputStream()).size(Width, Height).keepAspectRatio(false).outputQuality(1.0).outputFormat("png").asBufferedImage(), "png", new File(mediapath + name + ".png"));
+                    uploadedFile.delete();
+                    try {
+                        for (File subfile : new File(mediapath + name).listFiles()) {
+                            subfile.delete();
+                        }
+                        new File(mediapath + name).delete();
+                    } catch (Exception ignored) {
+                    }
+                    ArrayList<Object> arr = new ArrayList<>(1);
+                    arr.addFirst(true);
+                    arr.add(1, mediapath + name + ".png");
+                    Bettermaps.playingmedia.put(mapconfig, arr);
+                    Bettermaps.playmedia(new File(mediapath + name + ".png"),mapconfig);
+                    return "image upload OK";
+                }
 
 
-            String location = "mapimg/temp";          // the directory location where files will be stored
+
+                if (uploadedFile.getContentType().contains("video")){
+                    Path out = Paths.get("mapimg/temp/" + name + ".mp4");
+                    try (final InputStream in = uploadedFile.getInputStream()) {
+                        Files.copy(in, out);
+                        uploadedFile.delete();
+                    }
+                    Files.createDirectories(Paths.get(mediapath + name));
+                    try {
+                        extractFramez("mapimg/temp/" + name + ".mp4", Width, Height, 20, name, mediapath);
+                        ArrayList<Object> arr = new ArrayList<>(1);
+                        arr.addFirst(true);
+                        arr.add(1, mediapath + name);
+                        Bettermaps.playingmedia.put(mapconfig, arr);
+                        Bettermaps.playmedia(new File(mediapath + name),mapconfig);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    uploadedFile.delete();
+                    return "video upload OK";
+                }
+
+                return name +" was not a image or video file";
+            } catch (Exception e) {
+                response.status(400);
+                return "Error: " + e.getMessage();
+            }
+
+            /*z
+
+            String location = "mapimg/temp";          // the directory location where temp will be stored
 
             MultipartConfigElement multipartConfigElement = new MultipartConfigElement(location);
             request.raw().setAttribute("org.eclipse.jetty.multipartConfig",
                     multipartConfigElement);
             String id = IOUtils.toString(request.raw().getPart("id").getInputStream());
             System.out.println(id);
-            String mmcfg = IOUtils.toString(request.raw().getPart("multimapconfig").getInputStream());
+            String mapcfg = IOUtils.toString(request.raw().getPart("mapconfig").getInputStream());
             int Width = 128;
             int Height = 128;
             long[][] mmtable = {{Long.parseLong(id)}};
             String mediapath = "mapimg/media/";
-            if (!Objects.equals("", mmcfg)) {
-                 mmtable = table(mmcfg, "|", ",");
-                System.out.println(Arrays.deepToString(mmtable));
-
-                //System.out.println((((int[]) mmconfigdict.get("1"))[0]));
-                Width = mmtable[0].length * 128;
-                Height = mmtable.length * 128;
-            }
             Part uploadedFile = request.raw().getPart("media");
             if (uploadedFile.getContentType().contains("image")) {
                 System.out.println("image Upload");
@@ -78,6 +141,7 @@ public class web {
                 Bettermaps.playmedia(new File(mediapath + id + ".png"),mmtable);
                 return "image upload OK";
             }
+
             if (!uploadedFile.getContentType().contains("video")) {
                 return "not a video or image upload";
             }
@@ -101,7 +165,12 @@ public class web {
             uploadedFile.delete();
             return "video upload OK";
         });
-    }
+
+             */
+    });
+
+
+}
     public static long[][] table(String source, String outerdelim, String innerdelim) {
         // outerdelim may be a group of characters
         String[] sOuter = source.split("[" + outerdelim + "]");

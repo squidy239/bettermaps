@@ -2,7 +2,6 @@
 package net.fractalinfinity.bettermaps;
 
 
-import net.coobird.thumbnailator.Thumbnails;
 import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket;
 import net.minecraft.world.level.saveddata.maps.MapDecoration;
 import net.minecraft.world.level.saveddata.maps.MapId;
@@ -13,40 +12,22 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.MapInitializeEvent;
-import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.imgscalr.Scalr;
-import org.jcodec.api.FrameGrab;
-import org.jcodec.api.JCodecException;
-import org.jcodec.common.io.NIOUtils;
-import org.jcodec.common.io.SeekableByteChannel;
-import org.jcodec.common.model.Picture;
-import org.jcodec.scale.AWTUtil;
-import org.jetbrains.annotations.NotNull;
-import org.json.simple.JSONObject;
-import spark.utils.IOUtils;
 
 import javax.imageio.ImageIO;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.http.Part;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static spark.Spark.*;
+import static net.fractalinfinity.bettermaps.web.runweb;
 
 public final class Bettermaps extends JavaPlugin implements Listener {
     public static ConcurrentHashMap<Long, MapView> mapviewdict = new ConcurrentHashMap<>();
@@ -74,13 +55,12 @@ public final class Bettermaps extends JavaPlugin implements Listener {
             } catch (IOException | ClassNotFoundException e) {
                 System.out.println(e);
             }
-            playingmedia.forEach((k, v)->{List<Object> data = v;if ((Boolean) data.getFirst()){try {System.out.println(Arrays.deepToString(k));playmedia((File)data.get(1),k);} catch (IOException e) {throw new RuntimeException(e);}}});
+            playingmedia.forEach((k, v)->{List<Object> data = v;if ((Boolean) data.getFirst()){try {System.out.println(Arrays.deepToString(k));playmedia((File)data.get(1),k);} catch (IOException e) {JavaPlugin.getPlugin(this.getClass()).getLogger().warning(data.get(1).toString()+" does not exist!");playingmedia.remove(k);}}});
         }
         //try {playmedia(new File("mapimg/vids/128"), new long[][]{{172, 173,174,175,176,177,178,179}, {180, 181,182,183,184,185,186,187},{188,189,190,191,192,193,194,195},{196,197,198,199,200,201,202,203},{204,205,206,207,208,209,210,211}});} catch (IOException e) {throw new RuntimeException(e);}
         System.out.println("started");
         try {
-            web webhost = new web();
-            webhost.runweb();
+            runweb();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -160,7 +140,12 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         ArrayList<Object> arr = new ArrayList<>(1);
         // find if any overlap in ids and playingmedia and stop playing other if there is
         Enumeration<long[][]> keys = playingmedia.keys();
-        //TODO
+        while (keys.hasMoreElements()) {
+            long[][] key = keys.nextElement();
+            if (isoverlap(key, ids)) {
+                playingmedia.remove(key);
+            }
+        }
         arr.addFirst(true);
         arr.add(1, path);
         playingmedia.put(ids, arr);

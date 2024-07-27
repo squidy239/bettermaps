@@ -1,2 +1,5 @@
-net\fractalinfinity\bettermaps\Bettermapstest.class
-net\fractalinfinity\bettermaps\Bettermapstest$1.class
+net\fractalinfinity\bettermaps\KDTree3D$Node.class
+net\fractalinfinity\bettermaps\KDTree3D.class
+net\fractalinfinity\bettermaps\ImageUtils.class
+net\fractalinfinity\bettermaps\web.class
+net\fractalinfinity\bettermaps\videoprocessor.class

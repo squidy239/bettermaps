@@ -31,7 +31,6 @@ public class videoprocessor {
             int frameNumber = 0;
             int savedFrameNumber = 0;
             Picture f;
-            int totalframenum = grab.getVideoTrack().getMeta().getTotalFrames();
             while (null != (f = grab.getNativeFrame())) {
                 if (frameNumber % frameInterval == 0) {
                     int finalSavedFrameNumber = savedFrameNumber;
