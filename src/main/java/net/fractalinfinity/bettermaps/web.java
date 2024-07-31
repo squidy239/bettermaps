@@ -1,10 +1,13 @@
 package net.fractalinfinity.bettermaps;
 
 import net.coobird.thumbnailator.Thumbnails;
+import spark.servlet.SparkApplication;
 import spark.utils.IOUtils;
+import spark.utils.SparkUtils;
 
 import javax.imageio.ImageIO;
 import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -42,9 +45,9 @@ public class web {
         before((request, response) -> {
             if (request.raw().getContentType() != null && request.raw().getContentType().contains("multipart/form-data")) {
                 MultipartConfigElement multipartConfigElement = new MultipartConfigElement("mapimg/temp",
-                        1024L * 1024 * 5000, // Max file size (5000 MB)
-                        1024L * 1024 * 5000, // Max request size (5000 MB)
-                        1024 * 1024 * 200); // File size threshold (200 MB)
+                        1024L * 1024 * 50000, // Max file size (5000 MB)
+                        1024L * 1024 * 50000, // Max request size (5000 MB)
+                        1024 * 1024 * 10000); // File size on ram
                 request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
             }
         });
@@ -60,51 +63,35 @@ public class web {
                 String mediapath = "mapimg/media/";
                 if (uploadedFile.getContentType().contains("image")) {
                     System.out.println("image Upload");
-
-                    ImageIO.write(Thumbnails.of(uploadedFile.getInputStream()).size(Width, Height).keepAspectRatio(false).outputQuality(1.0).outputFormat("png").asBufferedImage(), "png", new File(mediapath + name + ".png"));
-                    uploadedFile.delete();
-                    try {
-                        for (File subfile : new File(mediapath + name).listFiles()) {
-                            subfile.delete();
-                        }
-                        new File(mediapath + name).delete();
-                    } catch (Exception ignored) {
-                    }
-                    ArrayList<Object> arr = new ArrayList<>(1);
-                    arr.addFirst(true);
-                    arr.add(1, mediapath + name + ".png");
-                    Bettermaps.playingmedia.put(mapconfig, arr);
-                    Bettermaps.playmedia(new File(mediapath + name + ".png"),mapconfig);
+                        try {
+                        ImageIO.write(Thumbnails.of(uploadedFile.getInputStream()).size(Width, Height).keepAspectRatio(false).outputQuality(1.0).outputFormat("png").asBufferedImage(), "png", new File(mediapath + name + ".png"));
+                        uploadedFile.delete();
+                            for (File subfile : new File(mediapath + name).listFiles()) {
+                                subfile.delete();
+                            }
+                            new File(mediapath + name).delete();
+                        Bettermaps.playmedia(new File(mediapath + name + ".png"), mapconfig);
+                        } catch (Exception e) {System.out.println(e);};
                     return "image upload OK";
                 }
-
-
-
-                if (uploadedFile.getContentType().contains("video")){
+                else if (uploadedFile.getContentType().contains("video")){
+                    System.out.println("video Upload");
+                        try {
                     Path out = Paths.get("mapimg/temp/" + name + ".mp4");
-                    try (final InputStream in = uploadedFile.getInputStream()) {
+                    final InputStream in = uploadedFile.getInputStream();
                         Files.copy(in, out);
                         uploadedFile.delete();
-                    }
                     Files.createDirectories(Paths.get(mediapath + name));
-                    try {
-                        extractFramez("mapimg/temp/" + name + ".mp4", Width, Height, 20, name, mediapath);
-                        ArrayList<Object> arr = new ArrayList<>(1);
-                        arr.addFirst(true);
-                        arr.add(1, mediapath + name);
-                        Bettermaps.playingmedia.put(mapconfig, arr);
-                        Bettermaps.playmedia(new File(mediapath + name),mapconfig);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                    uploadedFile.delete();
-                    return "video upload OK";
+                        extractFramez("mapimg/temp/" + name + ".mp4", Width, Height, 20, name, mediapath,true);
+                        Bettermaps.playbytemedia(new File(mediapath + name),mapconfig);
+                    uploadedFile.delete();}catch (Exception e) {System.out.println("Error prossesing video"+e);};
+                    return "video upload prossesing";
                 }
 
                 return name +" was not a image or video file";
             } catch (Exception e) {
                 response.status(400);
-                return "Error: " + e.getMessage();
+                return "Error: " + e;
             }
 
             /*z

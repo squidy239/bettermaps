@@ -2,13 +2,8 @@
 package net.fractalinfinity.bettermaps;
 
 
-import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket;
-import net.minecraft.world.level.saveddata.maps.MapDecoration;
-import net.minecraft.world.level.saveddata.maps.MapId;
-import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
-import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_21_R1.entity.CraftPlayer;
-import org.bukkit.entity.Player;
+import com.github.luben.zstd.Zstd;
+import com.github.luben.zstd.ZstdCompressCtx;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.MapInitializeEvent;
@@ -18,24 +13,27 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.imgscalr.Scalr;
 
 import javax.imageio.ImageIO;
+import javax.imageio.stream.FileImageInputStream;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageInputStreamImpl;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.IntStream;
 
+import static net.fractalinfinity.bettermaps.mapdraw.*;
 import static net.fractalinfinity.bettermaps.web.runweb;
 
 public final class Bettermaps extends JavaPlugin implements Listener {
     public static ConcurrentHashMap<Long, MapView> mapviewdict = new ConcurrentHashMap<>();
 
     public static ConcurrentHashMap<long[][], List<Object>> playingmedia = new ConcurrentHashMap<>();
+
+    static ScheduledExecutorService pool = Executors.newScheduledThreadPool(4);
     static ImageUtils imageutils = new ImageUtils();
-
-
     @Override
     public void onEnable() {
         try {
@@ -46,16 +44,30 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         }
         if (new File("mapimg/playingmedia.dat").exists()) {
             System.out.println("media exists");
+            ConcurrentHashMap<long[][], List<Object>> playingmediafile = null;
             try {
                 FileInputStream fileIn = new FileInputStream("mapimg/playingmedia.dat");
                 ObjectInputStream in = new ObjectInputStream(fileIn);
-                playingmedia = (ConcurrentHashMap<long[][], List<Object>>) in.readObject();
+                playingmediafile = (ConcurrentHashMap<long[][], List<Object>>) in.readObject();
                 in.close();
                 fileIn.close();
             } catch (IOException | ClassNotFoundException e) {
                 System.out.println(e);
             }
-            playingmedia.forEach((k, v)->{List<Object> data = v;if ((Boolean) data.getFirst()){try {System.out.println(Arrays.deepToString(k));playmedia((File)data.get(1),k);} catch (IOException e) {JavaPlugin.getPlugin(this.getClass()).getLogger().warning(data.get(1).toString()+" does not exist!");playingmedia.remove(k);}}});
+            playingmediafile.forEach((k, v) -> {
+                List<Object> data = v;
+                if ((Boolean) data.getFirst()) {
+                    try {
+                        System.out.println(Arrays.deepToString(k));
+                        if (data.get(2).equals("media")) playmedia((File) data.get(1), k);
+                        else if (data.get(2).equals("bytemedia")) playbytemedia((File) data.get(1), k);
+                        else Bettermaps.getPlugin(this.getClass()).getLogger().warning(Arrays.deepToString(k)+" is not a valid media type, media type: "+data.get(2));
+                    } catch (IOException e) {
+                        JavaPlugin.getPlugin(this.getClass()).getLogger().warning(data.get(1).toString() + " does not exist!");
+                        playingmedia.remove(k);
+                    }
+                }
+            });
         }
         //try {playmedia(new File("mapimg/vids/128"), new long[][]{{172, 173,174,175,176,177,178,179}, {180, 181,182,183,184,185,186,187},{188,189,190,191,192,193,194,195},{196,197,198,199,200,201,202,203},{204,205,206,207,208,209,210,211}});} catch (IOException e) {throw new RuntimeException(e);}
         System.out.println("started");
@@ -85,55 +97,71 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         return false;
     }
 
-    public static void setmapimg(BufferedImage image, long id, int x, int y) {
-        List<Player> pl = (List<Player>) Bukkit.getOnlinePlayers();
-        boolean islocked = true;
-        for (int i = 0; i < pl.size(); i++) {
-            if (((CraftPlayer) pl.get(i)).getHandle().connection != null) {
-                Collection<MapDecoration> icons = new ArrayList();
-                byte[] renderedimage = imageutils.imageToBytes(image);
-                ClientboundMapItemDataPacket packet = new ClientboundMapItemDataPacket(new MapId((int) id), MapView.Scale.valueOf("CLOSEST").getValue(), islocked, icons, new MapItemSavedData.MapPatch(x, y, 128, 128, renderedimage));
-                ((CraftPlayer) pl.get(i)).getHandle().connection.send(packet);
+    public static void playbytemedia(File path, long[][] ids) throws IOException {
+        if (!path.exists()) throw new IOException("path " + path + " does not exist");
+        ArrayList<Object> arr = new ArrayList<>(2);
+        // find if any overlap in ids and playingmedia and stop playing other if there is
+        Enumeration<long[][]> keys = playingmedia.keys();
+        while (keys.hasMoreElements()) {
+            long[][] key = keys.nextElement();
+            if (isoverlap(key, ids)) {
+                playingmedia.remove(key);
             }
         }
-    }
-
-
-    public static void putimageonmaps(BufferedImage image, long[][] ids) {
-        Thread.ofVirtual().start(() -> {
-            for (int l = 0; l < ids.length; l++) {
-                int finalL = l;
-                IntStream.range(0,ids[finalL].length).parallel().forEach(i->{
-                    setmapimg(image.getSubimage(i * 128, finalL * 128, 128, 128), ids[finalL][i], 0, 0);// System.out.println(ids[finalL][finalI] + " dosent exist");
-
-                });
-            }
-        });
-    }
-    private static boolean isoverlap(long[][] first, long[][] second) {
-        if (first == null || second == null || first.length == 0 || second.length == 0) {
-            return false;
-        }
-
-        int firstRows = first.length;
-        int firstCols = first[0].length;
-        int secondRows = second.length;
-        int secondCols = second[0].length;
-
-        for (int i = 0; i < firstRows; i++) {
-            for (int j = 0; j < firstCols; j++) {
-                for (int k = 0; k < secondRows; k++) {
-                    for (int l = 0; l < secondCols; l++) {
-                        if (first[i][j] == second[k][l]) {
-                            return true;
+        arr.addFirst(true);
+        arr.add(1, path);
+        arr.add(2, "bytemedia");
+        playingmedia.put(ids, arr);
+        AtomicBoolean hasrenderers = new AtomicBoolean(true);
+        if (path.isDirectory()) {
+            Thread.ofVirtual().start(() -> {
+                long frame = 0;
+                while (playingmedia.containsKey(ids) && (boolean) playingmedia.get(ids).getFirst()) {
+                    //long start = System.nanoTime();
+                    if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
+                    try {
+                        File file = new File(path, "/" + frame + ".png");
+                        if (!file.exists()) {
+                            frame = 0;
+                            file = new File(path, "/" + frame + ".png");
                         }
+                        BufferedImage image =ImageIO.read(new FileImageInputStream(file));
+                        putbytesonmaps(image, ids);
+                        //long end = System.nanoTime();
+                        //System.out.println("byte: "+(end - start)/1000000D);
+                        Thread.sleep(40);
+                        frame++;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
                 }
-            }
-        }
+            });
+        } else if (path.isFile()) {
+            // is image
+            Thread.ofVirtual().start(() -> {
+                long imgmodified;
+                long lastimgmodified = 0;
+                BufferedImage scaledimage = null;
+                while (playingmedia.containsKey(ids) && (boolean) playingmedia.get(ids).getFirst()) {
+                    if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
+                    try {
+                        imgmodified = path.lastModified();
+                        if (imgmodified != lastimgmodified) putimageonmaps( Scalr.resize(ImageIO.read(path), Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128), ids);
+                        lastimgmodified = imgmodified;
+                        Thread.sleep(1000);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
 
-        return false;
+        }
     }
+
+
+
+
+
 
     public static void playmedia(File path, long[][] ids) throws IOException {
         if (!path.exists()) throw new IOException("path " + path + " does not exist");
@@ -148,12 +176,15 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         }
         arr.addFirst(true);
         arr.add(1, path);
+        arr.add(2, "media");
         playingmedia.put(ids, arr);
+
         AtomicBoolean hasrenderers = new AtomicBoolean(true);
         if (path.isDirectory()) {
             Thread.ofVirtual().start(() -> {
                 long frame = 0;
                 while (playingmedia.containsKey(ids) && (boolean) playingmedia.get(ids).getFirst()) {
+                    //long start = System.nanoTime();
                     if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
                     try {
                         File file = new File(path, "/" + frame + ".png");
@@ -162,6 +193,8 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                             file = new File(path, "/" + frame + ".png");
                         }
                         putimageonmaps(Scalr.resize(ImageIO.read(file), Scalr.Method.AUTOMATIC, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128), ids);
+                        //long end = System.nanoTime();
+                        //System.out.println((end-start)/1000000D);
                         Thread.sleep(40);
                         frame++;
                     } catch (Exception e) {
