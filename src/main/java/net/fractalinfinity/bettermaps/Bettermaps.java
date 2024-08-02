@@ -54,6 +54,8 @@ public final class Bettermaps extends JavaPlugin implements Listener {
             } catch (IOException | ClassNotFoundException e) {
                 System.out.println(e);
             }
+            new mapdraw().ItemFramePacketInterceptor(this);
+            mapdraw.registerPacketInterceptor();
             playingmediafile.forEach((k, v) -> {
                 List<Object> data = v;
                 if ((Boolean) data.getFirst()) {
@@ -79,8 +81,6 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
 
     }
-
-
 
     @EventHandler
     public void mapevent(MapInitializeEvent mapp) {mapviewdict.put((long) mapp.getMap().getId(),mapp.getMap());}
