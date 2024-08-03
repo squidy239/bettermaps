@@ -66,12 +66,14 @@ public class web {
                         try {
                         ImageIO.write(Thumbnails.of(uploadedFile.getInputStream()).size(Width, Height).keepAspectRatio(false).outputQuality(1.0).outputFormat("png").asBufferedImage(), "png", new File(mediapath + name + ".png"));
                         uploadedFile.delete();
-                            for (File subfile : new File(mediapath + name).listFiles()) {
+                            File[] files = new File(mediapath + name).listFiles();
+                            if (files != null){
+                            for (File subfile : files) {
                                 subfile.delete();
-                            }
+                            }}
                             new File(mediapath + name).delete();
                         Bettermaps.playmedia(new File(mediapath + name + ".png"), mapconfig);
-                        } catch (Exception e) {System.out.println(e);};
+                        } catch (Exception e) {System.out.println(e+" imgupload");e.printStackTrace();};
                     return "image upload OK";
                 }
                 else if (uploadedFile.getContentType().contains("video")){

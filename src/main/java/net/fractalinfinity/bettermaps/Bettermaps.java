@@ -4,6 +4,7 @@ package net.fractalinfinity.bettermaps;
 
 import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdCompressCtx;
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.MapInitializeEvent;
@@ -23,6 +24,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import static net.fractalinfinity.bettermaps.mapdraw.*;
 import static net.fractalinfinity.bettermaps.web.runweb;
@@ -34,8 +36,11 @@ public final class Bettermaps extends JavaPlugin implements Listener {
 
     static ScheduledExecutorService pool = Executors.newScheduledThreadPool(4);
     static ImageUtils imageutils = new ImageUtils();
+
+
     @Override
     public void onEnable() {
+        mapidlocations.initialize();
         try {
             Files.createDirectories(Paths.get("mapimg/media"));
             Files.createDirectories(Paths.get("mapimg/temp"));
@@ -54,8 +59,6 @@ public final class Bettermaps extends JavaPlugin implements Listener {
             } catch (IOException | ClassNotFoundException e) {
                 System.out.println(e);
             }
-            new mapdraw().ItemFramePacketInterceptor(this);
-            mapdraw.registerPacketInterceptor();
             playingmediafile.forEach((k, v) -> {
                 List<Object> data = v;
                 if ((Boolean) data.getFirst()) {
@@ -133,7 +136,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                         Thread.sleep(40);
                         frame++;
                     } catch (Exception e) {
-                        throw new RuntimeException(e);
+                        Bukkit.getLogger().warning(e.toString());
                     }
                 }
             });
@@ -151,7 +154,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                         lastimgmodified = imgmodified;
                         Thread.sleep(1000);
                     } catch (Exception e) {
-                        throw new RuntimeException(e);
+                        Bukkit.getLogger().warning(e.toString());
                     }
                 }
             });
@@ -179,7 +182,6 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         arr.add(1, path);
         arr.add(2, "media");
         playingmedia.put(ids, arr);
-
         AtomicBoolean hasrenderers = new AtomicBoolean(true);
         if (path.isDirectory()) {
             Thread.ofVirtual().start(() -> {
@@ -199,7 +201,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                         Thread.sleep(40);
                         frame++;
                     } catch (Exception e) {
-                        throw new RuntimeException(e);
+                        Bukkit.getLogger().warning(e.toString());
                     }
                 }
             });
@@ -217,7 +219,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                         lastimgmodified = imgmodified;
                         Thread.sleep(1000);
                     } catch (Exception e) {
-                        throw new RuntimeException(e);
+                        Bukkit.getLogger().warning(e.toString());
                     }
                 }
             });
