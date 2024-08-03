@@ -5,6 +5,8 @@ package net.fractalinfinity.bettermaps;
 import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdCompressCtx;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.MapInitializeEvent;
@@ -40,7 +42,25 @@ public final class Bettermaps extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        mapidlocations.initialize();
+        ConcurrentHashMap<Long, Object[]> maplocin = new ConcurrentHashMap<>();
+        if (new File("mapimg/maplocations.dat").exists()) {
+            try {
+                FileInputStream fileIn = new FileInputStream("mapimg/maplocations.dat");
+                ObjectInputStream in = new ObjectInputStream(fileIn);
+                maplocin = (ConcurrentHashMap<Long, Object[]>) in.readObject();
+                in.close();
+                fileIn.close();
+            } catch (IOException | ClassNotFoundException e) {
+                System.out.println(e);
+            }
+        }
+        ConcurrentHashMap<Long, Location> prossesedmapin = new ConcurrentHashMap<>();
+        for (Long i : maplocin.keySet()){
+            Object[] loc = maplocin.get(i);
+            System.out.println(Arrays.toString(loc));
+            prossesedmapin.put(i, new Location( Bukkit.getWorld((String) loc[0]), (int) loc[1], (int) loc[2], (int) loc[3]));
+        }
+        mapidlocations.initialize(prossesedmapin);
         try {
             Files.createDirectories(Paths.get("mapimg/media"));
             Files.createDirectories(Paths.get("mapimg/temp"));
@@ -145,12 +165,11 @@ public final class Bettermaps extends JavaPlugin implements Listener {
             Thread.ofVirtual().start(() -> {
                 long imgmodified;
                 long lastimgmodified = 0;
-                BufferedImage scaledimage = null;
                 while (playingmedia.containsKey(ids) && (boolean) playingmedia.get(ids).getFirst()) {
                     if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
                     try {
                         imgmodified = path.lastModified();
-                        if (imgmodified != lastimgmodified) putimageonmaps( Scalr.resize(ImageIO.read(path), Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128), ids);
+                        if (imgmodified != lastimgmodified){BufferedImage image =ImageIO.read(new FileImageInputStream(path));putbytesonmaps(image, ids);}
                         lastimgmodified = imgmodified;
                         Thread.sleep(1000);
                     } catch (Exception e) {
@@ -212,10 +231,10 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                 long lastimgmodified = 0;
                 BufferedImage scaledimage = null;
                 while (playingmedia.containsKey(ids) && (boolean) playingmedia.get(ids).getFirst()) {
-                    if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
                     try {
+                        if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
                         imgmodified = path.lastModified();
-                        if (imgmodified != lastimgmodified) putimageonmaps( Scalr.resize(ImageIO.read(path), Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128), ids);
+                        if (imgmodified != lastimgmodified || true) putimageonmaps( Scalr.resize(ImageIO.read(path), Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128), ids);
                         lastimgmodified = imgmodified;
                         Thread.sleep(1000);
                     } catch (Exception e) {
@@ -236,6 +255,20 @@ public final class Bettermaps extends JavaPlugin implements Listener {
             FileOutputStream fileOut = new FileOutputStream("mapimg/playingmedia.dat");
             ObjectOutputStream out = new ObjectOutputStream(fileOut);
             out.writeObject(playingmedia);
+            out.close();
+            fileOut.close();
+            ConcurrentHashMap<Long, Object[]> maplocout = new ConcurrentHashMap<>();
+            for (long i : mapidlocations.maplocations.keySet()) {
+                Object[] o = new Object[4];
+                o[0] = mapidlocations.maplocations.get(i).getWorld().getName();
+                o[1] = mapidlocations.maplocations.get(i).getBlockX();
+                o[2] = mapidlocations.maplocations.get(i).getBlockY();
+                o[3] = mapidlocations.maplocations.get(i).getBlockZ();
+                maplocout.put(i,o);
+            }
+            FileOutputStream fileOut2 = new FileOutputStream("mapimg/maplocations.dat");
+            ObjectOutputStream out2 = new ObjectOutputStream(fileOut2);
+            out2.writeObject(maplocout);
             out.close();
             fileOut.close();
             for (File subfile : new File("mapimg/temp").listFiles()) {

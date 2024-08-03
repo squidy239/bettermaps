@@ -9,6 +9,7 @@ import javax.imageio.ImageIO;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -64,7 +65,9 @@ public class web {
                 if (uploadedFile.getContentType().contains("image")) {
                     System.out.println("image Upload");
                         try {
-                        ImageIO.write(Thumbnails.of(uploadedFile.getInputStream()).size(Width, Height).keepAspectRatio(false).outputQuality(1.0).outputFormat("png").asBufferedImage(), "png", new File(mediapath + name + ".png"));
+
+                            BufferedImage bufferedimage = Thumbnails.of(uploadedFile.getInputStream()).size(Width, Height).keepAspectRatio(false).outputQuality(1.0).outputFormat("png").asBufferedImage();
+                            ImageIO.write(ImageUtils.imageToimageBytes(bufferedimage), "png", new File(mediapath + name + ".png"));
                         uploadedFile.delete();
                             File[] files = new File(mediapath + name).listFiles();
                             if (files != null){

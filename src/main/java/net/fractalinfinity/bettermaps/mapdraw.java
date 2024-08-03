@@ -12,32 +12,26 @@ import org.bukkit.map.MapView;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.LongStream;
-
-import static net.fractalinfinity.bettermaps.Bettermaps.imageutils;
     public class mapdraw{
-   public static void setmapimg(BufferedImage image, long id, int x, int y) {
-        List<Player> pl = (List<Player>) Bukkit.getOnlinePlayers();
+   public static void setmapimg(BufferedImage image,List<Player> pl, long id, int x, int y) {
         boolean islocked = true;
-        for (int i = 0; i < pl.size(); i++) {
-            if (((CraftPlayer) pl.get(i)).getHandle().connection != null) {
-                Collection<MapDecoration> icons = new ArrayList();
-                byte[] renderedimage = imageutils.imageToBytes(image);
-                ClientboundMapItemDataPacket packet = new ClientboundMapItemDataPacket(new MapId((int) id), MapView.Scale.valueOf("CLOSEST").getValue(), islocked, icons, new MapItemSavedData.MapPatch(x, y, 128, 128, renderedimage));
-                ((CraftPlayer) pl.get(i)).getHandle().connection.send(packet);
-            }
-        }
+       for (Player player : pl) {
+           if (((CraftPlayer) player).getHandle().connection != null) {
+               Collection<MapDecoration> icons = new ArrayList<>();
+               byte[] renderedimage = ImageUtils.imageToBytes(image);
+               ClientboundMapItemDataPacket packet = new ClientboundMapItemDataPacket(new MapId((int) id), MapView.Scale.valueOf("CLOSEST").getValue(), islocked, icons, new MapItemSavedData.MapPatch(x, y, 128, 128, renderedimage));
+               ((CraftPlayer) player).getHandle().connection.send(packet);
+           }
+       }
     }
 
     public static List<Player> getplayersinmaprange(long[] ids, int distance) {
         List<Player> allplayers = new ArrayList<>(Bukkit.getOnlinePlayers());
         List<Player> players = new ArrayList<>();
         ConcurrentHashMap<Long, Location> maploc = mapidlocations.maplocations;
-        System.out.println(Arrays.toString(maploc.keySet().toArray()));
         for (Long i : ids){
                 if (maploc.containsKey(i)){
                 for (Player p : allplayers){
@@ -57,11 +51,11 @@ import static net.fractalinfinity.bettermaps.Bettermaps.imageutils;
         byte[] bytes = new byte[pixels.length];
         for (int i = 0; i < pixels.length; i++)bytes[i] = (byte) pixels[i];
         boolean islocked = true;
-        for (int i = 0; i < pl.size(); i++) {
-            if (((CraftPlayer) pl.get(i)).getHandle().connection != null && !pl.get(i).getDisplayName().equals(".gabeisthebest13")) {
+        for (Player player : pl) {
+            if (((CraftPlayer) player).getHandle().connection != null) {
                 Collection<MapDecoration> icons = new ArrayList<>();
-                ClientboundMapItemDataPacket packet = new ClientboundMapItemDataPacket(new MapId((int) id), MapView.Scale.valueOf("CLOSEST").getValue(), islocked, icons, new MapItemSavedData.MapPatch(x, y, 128, 128,bytes));
-                ((CraftPlayer) pl.get(i)).getHandle().connection.send(packet);
+                ClientboundMapItemDataPacket packet = new ClientboundMapItemDataPacket(new MapId((int) id), MapView.Scale.valueOf("CLOSEST").getValue(), islocked, icons, new MapItemSavedData.MapPatch(x, y, 128, 128, bytes));
+                ((CraftPlayer) player).getHandle().connection.send(packet);
             }
         }
     }
@@ -82,21 +76,22 @@ import static net.fractalinfinity.bettermaps.Bettermaps.imageutils;
         return result;
     }
     public static void putimageonmaps(BufferedImage image, long[][] ids) {
-            for (int l = 0; l < ids.length; l++) {
-                for (int i = 0; i < l; i++){
-                    setmapimg(image.getSubimage(i * 128, l * 128, 128, 128), ids[l][i], 0, 0);// System.out.println(ids[finalL][finalI] + " dosent exist");
-                };
+        List<Player> pl = getplayersinmaprange(flatten(ids),32);
+        for (int l = 0; l < ids.length; l++) {
+                for (int i = 0; i < ids[l].length; i++){
+                    setmapimg(image.getSubimage(i * 128, l * 128, 128, 128),pl, ids[l][i], 0, 0);// System.out.println(ids[finalL][finalI] + " dosent exist");
+                }
             }
     }
 
     public static void putbytesonmaps(BufferedImage imagebytes, long[][] ids) {
-        List<Player> pl = getplayersinmaprange(flatten(ids),4);
+        List<Player> pl = getplayersinmaprange(flatten(ids),32);
             try{
             for (int l = 0; l < ids.length; l++) {
                 for (int i = 0; i < ids[l].length; i++){
                     setmapbytes(imagebytes.getSubimage(i*128,l*128,128,128), ids[l][i], pl,0, 0);// System.out.println(ids[finalL][finalI] + " dosent exist");
-                };
-            }}catch (Exception e){System.out.println("bytesonmaps: "+e);}
+                }
+            }}catch (Exception e){System.out.println("putbytesonmaps: "+e);}
     }
     public static boolean isoverlap(long[][] first, long[][] second) {
         if (first == null || second == null || first.length == 0 || second.length == 0) {
