@@ -10,7 +10,11 @@ import org.bukkit.craftbukkit.v1_21_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapView;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.awt.image.IndexColorModel;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -46,20 +50,17 @@ import java.util.concurrent.ConcurrentHashMap;
     }
 
     public static void setmapbytes(BufferedImage imagebytes, long id,List<Player> pl,int x, int y) {
-        int[] pixels = new int[imagebytes.getWidth() * imagebytes.getHeight()];
-        imagebytes.getRGB(0, 0, imagebytes.getWidth(), imagebytes.getHeight(), pixels, 0, imagebytes.getWidth());
-        byte[] bytes = new byte[pixels.length];
-        for (int i = 0; i < pixels.length; i++)bytes[i] = (byte) pixels[i];
+        byte[] bytes = ((DataBufferByte) imagebytes.getRaster().getDataBuffer()).getData();
         boolean islocked = true;
+        Collection<MapDecoration> icons = new ArrayList<>();
+        ClientboundMapItemDataPacket packet = new ClientboundMapItemDataPacket(new MapId((int) id), MapView.Scale.valueOf("CLOSEST").getValue(), islocked, icons, new MapItemSavedData.MapPatch(x, y, 128, 128, bytes));
         for (Player player : pl) {
             if (((CraftPlayer) player).getHandle().connection != null) {
-                Collection<MapDecoration> icons = new ArrayList<>();
-                ClientboundMapItemDataPacket packet = new ClientboundMapItemDataPacket(new MapId((int) id), MapView.Scale.valueOf("CLOSEST").getValue(), islocked, icons, new MapItemSavedData.MapPatch(x, y, 128, 128, bytes));
                 ((CraftPlayer) player).getHandle().connection.send(packet);
             }
         }
     }
-    private static long[] flatten(long[][] matrix) {
+    static long[] flatten(long[][] matrix) {
         int totalElements = 0;
         for (long[] row : matrix) {
             totalElements += row.length;
@@ -75,8 +76,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
         return result;
     }
-    public static void putimageonmaps(BufferedImage image, long[][] ids) {
-        List<Player> pl = getplayersinmaprange(flatten(ids),32);
+    public static void putimageonmaps(BufferedImage image,List<Player> pl, long[][] ids) {
         for (int l = 0; l < ids.length; l++) {
                 for (int i = 0; i < ids[l].length; i++){
                     setmapimg(image.getSubimage(i * 128, l * 128, 128, 128),pl, ids[l][i], 0, 0);// System.out.println(ids[finalL][finalI] + " dosent exist");
@@ -84,8 +84,7 @@ import java.util.concurrent.ConcurrentHashMap;
             }
     }
 
-    public static void putbytesonmaps(BufferedImage imagebytes, long[][] ids) {
-        List<Player> pl = getplayersinmaprange(flatten(ids),32);
+    public static void putbytesonmaps(BufferedImage imagebytes,List<Player> pl, long[][] ids) {
             try{
             for (int l = 0; l < ids.length; l++) {
                 for (int i = 0; i < ids[l].length; i++){

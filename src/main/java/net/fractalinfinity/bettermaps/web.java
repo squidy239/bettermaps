@@ -15,12 +15,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import static net.fractalinfinity.bettermaps.Bettermaps.playingmedia;
+import static net.fractalinfinity.bettermaps.mapdraw.isoverlap;
 import static net.fractalinfinity.bettermaps.videoprocessor.extractFramez;
 import static spark.Spark.*;
 
@@ -67,8 +66,16 @@ public class web {
                         try {
 
                             BufferedImage bufferedimage = Thumbnails.of(uploadedFile.getInputStream()).size(Width, Height).keepAspectRatio(false).outputQuality(1.0).outputFormat("png").asBufferedImage();
-                            ImageIO.write(ImageUtils.imageToimageBytes(bufferedimage), "png", new File(mediapath + name + ".png"));
+                            ImageUtils.writepng8(bufferedimage,new File(mediapath + name + ".png"));
+                            //ImageIO.write(ImageUtils.imageToimageBytes(bufferedimage), "png", new File(mediapath + name + ".png"));
                         uploadedFile.delete();
+                            Enumeration<long[][]> keys = playingmedia.keys();
+                            while (keys.hasMoreElements()) {
+                                long[][] key = keys.nextElement();
+                                if (isoverlap(key, mapconfig)) {
+                                    playingmedia.remove(key);
+                                }
+                            }
                             File[] files = new File(mediapath + name).listFiles();
                             if (files != null){
                             for (File subfile : files) {
@@ -87,10 +94,18 @@ public class web {
                         Files.copy(in, out);
                         uploadedFile.delete();
                     Files.createDirectories(Paths.get(mediapath + name));
+                            Enumeration<long[][]> keys = playingmedia.keys();
+                            while (keys.hasMoreElements()) {
+                                long[][] key = keys.nextElement();
+                                if (isoverlap(key, mapconfig)) {
+                                    playingmedia.remove(key);
+                                }
+                            }
+                            new File(mediapath + name + ".png").delete();
                         extractFramez("mapimg/temp/" + name + ".mp4", Width, Height, 20, name, mediapath,true);
                         Bettermaps.playbytemedia(new File(mediapath + name),mapconfig);
                     uploadedFile.delete();}catch (Exception e) {System.out.println("Error prossesing video"+e);};
-                    return "video upload prossesing";
+                    return "video upload prossesed";
                 }
 
                 return name +" was not a image or video file";

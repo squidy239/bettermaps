@@ -7,6 +7,7 @@ import com.github.luben.zstd.ZstdCompressCtx;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.MapInitializeEvent;
@@ -140,6 +141,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         if (path.isDirectory()) {
             Thread.ofVirtual().start(() -> {
                 long frame = 0;
+                List<Player> pl = getplayersinmaprange(flatten(ids),32);
                 while (playingmedia.containsKey(ids) && (boolean) playingmedia.get(ids).getFirst()) {
                     //long start = System.nanoTime();
                     if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
@@ -149,8 +151,9 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                             frame = 0;
                             file = new File(path, "/" + frame + ".png");
                         }
+                        if (frame % 50 == 0 ) pl = getplayersinmaprange(flatten(ids),32);
                         BufferedImage image =ImageIO.read(new FileImageInputStream(file));
-                        putbytesonmaps(image, ids);
+                        putbytesonmaps(image,pl, ids);
                         //long end = System.nanoTime();
                         //System.out.println("byte: "+(end - start)/1000000D);
                         Thread.sleep(40);
@@ -169,7 +172,8 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                     if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
                     try {
                         imgmodified = path.lastModified();
-                        if (imgmodified != lastimgmodified){BufferedImage image =ImageIO.read(new FileImageInputStream(path));putbytesonmaps(image, ids);}
+                        List<Player> pl = getplayersinmaprange(flatten(ids),32);
+                        if (imgmodified != lastimgmodified){BufferedImage image =ImageIO.read(new FileImageInputStream(path));putbytesonmaps(image,pl, ids);}
                         lastimgmodified = imgmodified;
                         Thread.sleep(1000);
                     } catch (Exception e) {
@@ -205,6 +209,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         if (path.isDirectory()) {
             Thread.ofVirtual().start(() -> {
                 long frame = 0;
+                List<Player> pl = getplayersinmaprange(flatten(ids),32);
                 while (playingmedia.containsKey(ids) && (boolean) playingmedia.get(ids).getFirst()) {
                     //long start = System.nanoTime();
                     if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
@@ -214,7 +219,8 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                             frame = 0;
                             file = new File(path, "/" + frame + ".png");
                         }
-                        putimageonmaps(Scalr.resize(ImageIO.read(file), Scalr.Method.AUTOMATIC, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128), ids);
+                        if (frame % 50 == 0) pl = getplayersinmaprange(flatten(ids),32);
+                        putimageonmaps(Scalr.resize(ImageIO.read(file), Scalr.Method.AUTOMATIC, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128), pl,ids);
                         //long end = System.nanoTime();
                         //System.out.println((end-start)/1000000D);
                         Thread.sleep(40);
@@ -234,7 +240,8 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                     try {
                         if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
                         imgmodified = path.lastModified();
-                        if (imgmodified != lastimgmodified || true) putimageonmaps( Scalr.resize(ImageIO.read(path), Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128), ids);
+                        List<Player> pl = getplayersinmaprange(flatten(ids),32);
+                        if (imgmodified != lastimgmodified || true) putimageonmaps( Scalr.resize(ImageIO.read(path), Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128),pl, ids);
                         lastimgmodified = imgmodified;
                         Thread.sleep(1000);
                     } catch (Exception e) {
