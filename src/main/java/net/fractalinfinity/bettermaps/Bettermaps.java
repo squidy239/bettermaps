@@ -2,11 +2,8 @@
 package net.fractalinfinity.bettermaps;
 
 
-import com.github.luben.zstd.Zstd;
-import com.github.luben.zstd.ZstdCompressCtx;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,8 +15,6 @@ import org.imgscalr.Scalr;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.FileImageInputStream;
-import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageInputStreamImpl;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
@@ -27,7 +22,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 
 import static net.fractalinfinity.bettermaps.mapdraw.*;
 import static net.fractalinfinity.bettermaps.web.runweb;
@@ -141,9 +135,8 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         if (path.isDirectory()) {
             Thread.ofVirtual().start(() -> {
                 long frame = 0;
-                List<Player> pl = getplayersinmaprange(flatten(ids),32);
+                List<Player> pl = GetPlayersInMapRange(flatten(ids),32);
                 while (playingmedia.containsKey(ids) && (boolean) playingmedia.get(ids).getFirst()) {
-                    //long start = System.nanoTime();
                     if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
                     try {
                         File file = new File(path, "/" + frame + ".png");
@@ -151,11 +144,12 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                             frame = 0;
                             file = new File(path, "/" + frame + ".png");
                         }
-                        if (frame % 50 == 0 ) pl = getplayersinmaprange(flatten(ids),32);
-                        BufferedImage image =ImageIO.read(new FileImageInputStream(file));
+                        if (frame % 50 == 0 ) pl = GetPlayersInMapRange(flatten(ids),32);
+                        BufferedImage image =ImageIO.read(file);
+                        //long start = System.nanoTime();
                         putbytesonmaps(image,pl, ids);
                         //long end = System.nanoTime();
-                        //System.out.println("byte: "+(end - start)/1000000D);
+                        //System.out.println("ms: "+(end - start)/1000000D);
                         Thread.sleep(40);
                         frame++;
                     } catch (Exception e) {
@@ -172,7 +166,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                     if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
                     try {
                         imgmodified = path.lastModified();
-                        List<Player> pl = getplayersinmaprange(flatten(ids),32);
+                        List<Player> pl = GetPlayersInMapRange(flatten(ids),32);
                         if (imgmodified != lastimgmodified){BufferedImage image =ImageIO.read(new FileImageInputStream(path));putbytesonmaps(image,pl, ids);}
                         lastimgmodified = imgmodified;
                         Thread.sleep(1000);
@@ -209,7 +203,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         if (path.isDirectory()) {
             Thread.ofVirtual().start(() -> {
                 long frame = 0;
-                List<Player> pl = getplayersinmaprange(flatten(ids),32);
+                List<Player> pl = GetPlayersInMapRange(flatten(ids),32);
                 while (playingmedia.containsKey(ids) && (boolean) playingmedia.get(ids).getFirst()) {
                     //long start = System.nanoTime();
                     if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
@@ -219,7 +213,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                             frame = 0;
                             file = new File(path, "/" + frame + ".png");
                         }
-                        if (frame % 50 == 0) pl = getplayersinmaprange(flatten(ids),32);
+                        if (frame % 50 == 0) pl = GetPlayersInMapRange(flatten(ids),32);
                         putimageonmaps(Scalr.resize(ImageIO.read(file), Scalr.Method.AUTOMATIC, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128), pl,ids);
                         //long end = System.nanoTime();
                         //System.out.println((end-start)/1000000D);
@@ -240,7 +234,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                     try {
                         if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
                         imgmodified = path.lastModified();
-                        List<Player> pl = getplayersinmaprange(flatten(ids),32);
+                        List<Player> pl = GetPlayersInMapRange(flatten(ids),32);
                         if (imgmodified != lastimgmodified || true) putimageonmaps( Scalr.resize(ImageIO.read(path), Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128),pl, ids);
                         lastimgmodified = imgmodified;
                         Thread.sleep(1000);
