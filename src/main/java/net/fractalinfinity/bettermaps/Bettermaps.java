@@ -31,9 +31,6 @@ public final class Bettermaps extends JavaPlugin implements Listener {
 
     public static ConcurrentHashMap<long[][], List<Object>> playingmedia = new ConcurrentHashMap<>();
 
-    static ScheduledExecutorService pool = Executors.newScheduledThreadPool(4);
-    static ImageUtils imageutils = new ImageUtils();
-
 
     @Override
     public void onEnable() {
@@ -79,8 +76,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                 if ((Boolean) data.getFirst()) {
                     try {
                         System.out.println(Arrays.deepToString(k));
-                        if (data.get(2).equals("media")) playmedia((File) data.get(1), k);
-                        else if (data.get(2).equals("bytemedia")) playbytemedia((File) data.get(1), k);
+                        if (data.get(2).equals("bytemedia")) playbytemedia((File) data.get(1), k,20F);
                         else Bettermaps.getPlugin(this.getClass()).getLogger().warning(Arrays.deepToString(k)+" is not a valid media type, media type: "+data.get(2));
                     } catch (IOException e) {
                         JavaPlugin.getPlugin(this.getClass()).getLogger().warning(data.get(1).toString() + " does not exist!");
@@ -116,7 +112,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
     }
 
 
-    public static void playbytemedia(File path, long[][] ids) throws IOException {
+    public static void playbytemedia(File path, long[][] ids,Float fps) throws IOException {
         if (!path.exists()) throw new IOException("path " + path + " does not exist");
         ArrayList<Object> arr = new ArrayList<>(2);
         // find if any overlap in ids and playingmedia and stop playing other if there is
@@ -136,24 +132,31 @@ public final class Bettermaps extends JavaPlugin implements Listener {
             Thread.ofVirtual().start(() -> {
                 long frame = 0;
                 List<Player> pl = GetPlayersInMapRange(flatten(ids),32);
-                while (playingmedia.containsKey(ids) && (boolean) playingmedia.get(ids).getFirst()) {
+                while (playingmedia.containsKey(ids)) {
+                    long start = System.nanoTime();
+                    if (frame % 20 == 0 ) pl = GetPlayersInMapRange(flatten(ids),32);
+                    if (!pl.isEmpty()){
                     if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
                     try {
-                        File file = new File(path, "/" + frame + ".png");
-                        if (!file.exists()) {
-                            frame = 0;
-                            file = new File(path, "/" + frame + ".png");
+                        float ms = 0;
+                        if ((boolean) playingmedia.get(ids).getFirst()) {
+                            File file = new File(path, "/" + frame + ".png");
+                            if (!file.exists()) {
+                                frame = 0;
+                                file = new File(path, "/" + frame + ".png");
+                            }
+                            BufferedImage image = ImageIO.read(file);
+                            PutMinecraftImageOnMaps(image, pl, ids);
+                            long end = System.nanoTime();
+                            ms = 0F;
+                            ms = (end - start) / 1000000F < 0 ? ms : 0F;
+                            //System.out.println("ms: "+ms);
+                            frame++;
                         }
-                        if (frame % 50 == 0 ) pl = GetPlayersInMapRange(flatten(ids),32);
-                        BufferedImage image =ImageIO.read(file);
-                        //long start = System.nanoTime();
-                        putbytesonmaps(image,pl, ids);
-                        //long end = System.nanoTime();
-                        //System.out.println("ms: "+(end - start)/1000000D);
-                        Thread.sleep(40);
-                        frame++;
+                        Thread.sleep((long) (((1 / fps) * 1000) - ms));
                     } catch (Exception e) {
                         Bukkit.getLogger().warning(e.toString());
+                    }
                     }
                 }
             });
@@ -167,7 +170,8 @@ public final class Bettermaps extends JavaPlugin implements Listener {
                     try {
                         imgmodified = path.lastModified();
                         List<Player> pl = GetPlayersInMapRange(flatten(ids),32);
-                        if (imgmodified != lastimgmodified){BufferedImage image =ImageIO.read(new FileImageInputStream(path));putbytesonmaps(image,pl, ids);}
+                        if (imgmodified != lastimgmodified){BufferedImage image =ImageIO.read(new FileImageInputStream(path));
+                            PutMinecraftImageOnMaps(image,pl, ids);}
                         lastimgmodified = imgmodified;
                         Thread.sleep(1000);
                     } catch (Exception e) {
@@ -179,73 +183,6 @@ public final class Bettermaps extends JavaPlugin implements Listener {
         }
     }
 
-
-
-
-
-
-    public static void playmedia(File path, long[][] ids) throws IOException {
-        if (!path.exists()) throw new IOException("path " + path + " does not exist");
-        ArrayList<Object> arr = new ArrayList<>(1);
-        // find if any overlap in ids and playingmedia and stop playing other if there is
-        Enumeration<long[][]> keys = playingmedia.keys();
-        while (keys.hasMoreElements()) {
-            long[][] key = keys.nextElement();
-            if (isoverlap(key, ids)) {
-                playingmedia.remove(key);
-            }
-        }
-        arr.addFirst(true);
-        arr.add(1, path);
-        arr.add(2, "media");
-        playingmedia.put(ids, arr);
-        AtomicBoolean hasrenderers = new AtomicBoolean(true);
-        if (path.isDirectory()) {
-            Thread.ofVirtual().start(() -> {
-                long frame = 0;
-                List<Player> pl = GetPlayersInMapRange(flatten(ids),32);
-                while (playingmedia.containsKey(ids) && (boolean) playingmedia.get(ids).getFirst()) {
-                    //long start = System.nanoTime();
-                    if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
-                    try {
-                        File file = new File(path, "/" + frame + ".png");
-                        if (!file.exists()) {
-                            frame = 0;
-                            file = new File(path, "/" + frame + ".png");
-                        }
-                        if (frame % 50 == 0) pl = GetPlayersInMapRange(flatten(ids),32);
-                        putimageonmaps(Scalr.resize(ImageIO.read(file), Scalr.Method.AUTOMATIC, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128), pl,ids);
-                        //long end = System.nanoTime();
-                        //System.out.println((end-start)/1000000D);
-                        Thread.sleep(40);
-                        frame++;
-                    } catch (Exception e) {
-                        Bukkit.getLogger().warning(e.toString());
-                    }
-                }
-            });
-        } else if (path.isFile()) {
-            // is image
-            Thread.ofVirtual().start(() -> {
-                long imgmodified;
-                long lastimgmodified = 0;
-                BufferedImage scaledimage = null;
-                while (playingmedia.containsKey(ids) && (boolean) playingmedia.get(ids).getFirst()) {
-                    try {
-                        if (hasrenderers.get()) {hasrenderers.set(removemaprenderers(ids));};
-                        imgmodified = path.lastModified();
-                        List<Player> pl = GetPlayersInMapRange(flatten(ids),32);
-                        if (imgmodified != lastimgmodified || true) putimageonmaps( Scalr.resize(ImageIO.read(path), Scalr.Method.ULTRA_QUALITY, Scalr.Mode.FIT_EXACT, ids[0].length * 128, ids.length * 128),pl, ids);
-                        lastimgmodified = imgmodified;
-                        Thread.sleep(1000);
-                    } catch (Exception e) {
-                        Bukkit.getLogger().warning(e.toString());
-                    }
-                }
-            });
-
-        }
-    }
 
 
 
@@ -283,93 +220,3 @@ public final class Bettermaps extends JavaPlugin implements Listener {
 
 
 }
-
-    /*
-    public static void extractFrames(String videoFilePath,int width,int height, double frameRate,String id) throws IOException, JCodecException {
-        SeekableByteChannel channel = null;
-        try {
-            channel = NIOUtils.readableFileChannel(videoFilePath);
-            FrameGrab grab = FrameGrab.createFrameGrab(channel);
-            double videoFrameRate = grab.getVideoTrack().getMeta().getTotalFrames() / grab.getVideoTrack().getMeta().getTotalDuration();
-            int frameInterval = (int) Math.round(videoFrameRate / frameRate);
-
-            Picture picture;
-            int frameNumber = 0;
-            int savedFrameNumber = 0;
-            while (null != (picture = grab.getNativeFrame())) {
-                if (frameNumber % frameInterval == 0) {
-
-                    int finalSavedFrameNumber = savedFrameNumber;
-                    Picture finalPicture = picture;
-                    scheduler.execute(()-> {
-                        BufferedImage bufferedImage = null;
-                        try {
-                            bufferedImage = Thumbnails.of(AWTUtil.toBufferedImage(finalPicture)).size(128, 128).keepAspectRatio(false).outputQuality(1.0).outputFormat("png").asBufferedImage();
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                        File outputfile = new File("mapimg/vids/" + id + "/", +finalSavedFrameNumber + ".png");
-                                try {
-                                    ImageIO.write(bufferedImage, "png", outputfile);
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                                System.out.println("Saved frame_" + finalSavedFrameNumber + ".png");
-                            });
-                        savedFrameNumber++;
-                }
-                frameNumber++;
-            }
-        } finally {
-            System.out.println("done");
-            if (channel != null) {
-                channel.close();
-                Files.delete(new File(videoFilePath).toPath());
-            }
-        }
-    }
-    private static void vid2img(@NotNull String videoFilestr, int width , int height, double targetFrameRate, String id) throws IOException {
-        ArrayList<BufferedImage> images = new ArrayList<>();
-        File videoFile = new File(videoFilestr);
-        VideoCapture videoCapture = new VideoCapture(videoFile.getAbsolutePath());
-        Files.delete(videoFile.toPath());
-
-        if (!videoCapture.isOpened()) {
-            System.out.println("Error: Could not open video file.");
-            return;
-        }
-
-        double originalFrameRate = videoCapture.get(opencv_videoio.CAP_PROP_FPS);
-
-        int frameSkipInterval = (int) (originalFrameRate / targetFrameRate);
-
-        int frameCount = 0;
-
-        while (true) {
-            Mat frame = new Mat();
-            boolean isRead = videoCapture.read(frame);
-
-            if (!isRead || frame.empty()) {
-                break;
-            }
-            if (frameCount % frameSkipInterval == 0) {
-                Mat resizedFrame = new Mat();
-                opencv_imgproc.resize(frame, resizedFrame, new Size(width, height));
-                byte[] mob = new byte[(int) resizedFrame.arraySize()];
-                opencv_imgcodecs.imencode(".png", resizedFrame, mob);
-                BufferedImage image = ImageIO.read(new ByteArrayInputStream(mob));
-                images.add(image);
-            }
-            frameCount++;
-        }
-
-        videoCapture.release();
-        System.out.println("images");
-        Files.createDirectories(Paths.get("mapimg/vids/"+id));
-        for (int i = 0; i < images.size(); i++) {
-            try {ImageIO.write(images.get(i), "png", new File( "mapimg/vids/"+id+"/"+ i + ".png"));} catch (Exception e){System.out.println("error writing image");}
-
-        }
-    }
-}
-*/

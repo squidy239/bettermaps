@@ -19,11 +19,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class mapdraw{
-   public static void setmapimg(BufferedImage image,List<Player> pl, long id, int x, int y) {
-       byte[] renderedimage = ImageUtils.imageToBytes(image);
-       setmapbytes(renderedimage,pl,id,x,y);
-    }
-
     public static List<Player> GetPlayersInMapRange(long[] ids, int distance) {
         List<Player> allplayers = new ArrayList<>(Bukkit.getOnlinePlayers());
         List<Player> players = new ArrayList<>();
@@ -64,21 +59,14 @@ public class mapdraw{
 
         return result;
     }
-    public static void putimageonmaps(BufferedImage image,List<Player> pl, long[][] ids) {
-        for (int l = 0; l < ids.length; l++) {
-                for (int i = 0; i < ids[l].length; i++){
-                    setmapimg(image.getSubimage(i * 128, l * 128, 128, 128),pl, ids[l][i], 0, 0);// System.out.println(ids[finalL][finalI] + " dosent exist");
-                }
-            }
-    }
-    public static void putbytesonmaps(BufferedImage imagebytes,List<Player> pl, long[][] ids) {
+    public static void PutMinecraftImageOnMaps(BufferedImage imagebytes, List<Player> pl, long[][] ids) {
         try{
             for (int l = 0; l < ids.length; l++) {
                 for (int i = 0; i < ids[l].length; i++){
                     byte[] bytes = ((DataBufferByte) imagebytes.getData(new Rectangle(i*128,l*128,128,128)).getDataBuffer()).getData();
                     setmapbytes(bytes, pl, ids[l][i],0, 0);// System.out.println(ids[finalL][finalI] + " dosent exist");
                 }
-            }}catch (Exception e){System.out.println("putbytesonmaps: "+e);}
+            }}catch (Exception e){System.out.println("PutMinecraftImageOnMaps: "+e);}
     }
     public static boolean isoverlap(long[][] first, long[][] second) {
         if (first == null || second == null || first.length == 0 || second.length == 0) {

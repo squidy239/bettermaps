@@ -1,17 +1,12 @@
 package net.fractalinfinity.bettermaps;
 
 import net.coobird.thumbnailator.Thumbnails;
-import spark.servlet.SparkApplication;
 import spark.utils.IOUtils;
-import spark.utils.SparkUtils;
 
-import javax.imageio.ImageIO;
 import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -66,7 +61,7 @@ public class web {
                         try {
 
                             BufferedImage bufferedimage = Thumbnails.of(uploadedFile.getInputStream()).size(Width, Height).keepAspectRatio(false).outputQuality(1.0).outputFormat("png").asBufferedImage();
-                            ImageUtils.writepng8(bufferedimage,new File(mediapath + name + ".png"));
+                            ImageUtils.ConvertAndWriteMinecraftImage(bufferedimage,new File(mediapath + name + ".png"));
                             //ImageIO.write(ImageUtils.imageToimageBytes(bufferedimage), "png", new File(mediapath + name + ".png"));
                         uploadedFile.delete();
                             Enumeration<long[][]> keys = playingmedia.keys();
@@ -82,7 +77,7 @@ public class web {
                                 subfile.delete();
                             }}
                             new File(mediapath + name).delete();
-                        Bettermaps.playmedia(new File(mediapath + name + ".png"), mapconfig);
+                        Bettermaps.playbytemedia(new File(mediapath + name + ".png"), mapconfig, 20F);
                         } catch (Exception e) {System.out.println(e+" imgupload");e.printStackTrace();};
                     return "image upload OK";
                 }
@@ -102,8 +97,8 @@ public class web {
                                 }
                             }
                             new File(mediapath + name + ".png").delete();
-                        extractFramez("mapimg/temp/" + name + ".mp4", Width, Height, 20, name, mediapath,true);
-                        Bettermaps.playbytemedia(new File(mediapath + name),mapconfig);
+                        extractFramez("mapimg/temp/" + name + ".mp4", Width, Height, 20, name, mediapath);
+                        Bettermaps.playbytemedia(new File(mediapath + name),mapconfig, 20F);
                     uploadedFile.delete();}catch (Exception e) {System.out.println("Error prossesing video"+e);};
                     return "video upload prossesed";
                 }
