@@ -18,24 +18,31 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class mapdraw{
+public class mapdraw {
     public static List<Player> GetPlayersInMapRange(long[] ids, int distance) {
         List<Player> allplayers = new ArrayList<>(Bukkit.getOnlinePlayers());
         List<Player> players = new ArrayList<>();
         ConcurrentHashMap<Long, Location> maploc = mapidlocations.maplocations;
-        for (Long i : ids){
-                if (maploc.containsKey(i)){
-                for (Player p : allplayers){
-                    if (maploc.get(i).distance(p.getLocation()) < distance && !players.contains(p)){
-                        players.add(p);
+        for (Long i : ids) {
+            if (maploc.containsKey(i)) {
+                for (Player p : allplayers) {
+                    try {
+
+                    if (maploc.get(i).getWorld() == p.getWorld()) {
+                        if (maploc.get(i).distance(p.getLocation()) < distance && !players.contains(p)) {
+                            players.add(p);
+                        }
+                    }
+                    }catch (Exception e){
+                        System.out.println(e);
+                    }
                 }
             }
-                }
         }
         return players;
     }
 
-    public static void setmapbytes(byte[] bytes,List<Player> pl, long id,int x, int y)  {
+    public static void setmapbytes(byte[] bytes, List<Player> pl, long id, int x, int y) {
         boolean islocked = true;
         Collection<MapDecoration> icons = new ArrayList<>();
         ClientboundMapItemDataPacket packet = new ClientboundMapItemDataPacket(new MapId((int) id), MapView.Scale.valueOf("CLOSEST").getValue(), islocked, icons, new MapItemSavedData.MapPatch(x, y, 128, 128, bytes));
@@ -43,6 +50,7 @@ public class mapdraw{
             ((CraftPlayer) player).getHandle().connection.send(packet);
         }
     }
+
     static long[] flatten(long[][] matrix) {
         int totalElements = 0;
         for (long[] row : matrix) {
@@ -59,15 +67,20 @@ public class mapdraw{
 
         return result;
     }
+
     public static void PutMinecraftImageOnMaps(BufferedImage imagebytes, List<Player> pl, long[][] ids) {
-        try{
+        try {
             for (int l = 0; l < ids.length; l++) {
-                for (int i = 0; i < ids[l].length; i++){
-                    byte[] bytes = ((DataBufferByte) imagebytes.getData(new Rectangle(i*128,l*128,128,128)).getDataBuffer()).getData();
-                    setmapbytes(bytes, pl, ids[l][i],0, 0);// System.out.println(ids[finalL][finalI] + " dosent exist");
+                for (int i = 0; i < ids[l].length; i++) {
+                    byte[] bytes = ((DataBufferByte) imagebytes.getData(new Rectangle(i * 128, l * 128, 128, 128)).getDataBuffer()).getData();
+                    setmapbytes(bytes, pl, ids[l][i], 0, 0);// System.out.println(ids[finalL][finalI] + " dosent exist");
                 }
-            }}catch (Exception e){System.out.println("PutMinecraftImageOnMaps: "+e);}
+            }
+        } catch (Exception e) {
+            System.out.println("PutMinecraftImageOnMaps: " + e);
+        }
     }
+
     public static boolean isoverlap(long[][] first, long[][] second) {
         if (first == null || second == null || first.length == 0 || second.length == 0) {
             return false;

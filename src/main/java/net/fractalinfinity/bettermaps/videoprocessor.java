@@ -8,22 +8,19 @@ import org.jcodec.common.io.SeekableByteChannel;
 import org.jcodec.common.model.Picture;
 import org.jcodec.scale.AWTUtil;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.github.luben.zstd.Zstd.compress;
-import static com.github.luben.zstd.Zstd.decompress;
-import static java.util.concurrent.Executors.newScheduledThreadPool;
-
 public class videoprocessor {
 
     public static void main(String[] args) throws JCodecException, IOException {
-        extractFramez("C:/Users/sacha/Downloads/Rick Astley - Never Gonna Give You Up (Official Music Video) (1).mp4",720,720,40,"test3","C:/Users/sacha/Downloads/mc_server/nonmctestdir/");
+        extractFramez("C:/Users/sacha/Downloads/Rick Astley - Never Gonna Give You Up (Official Music Video) (1).mp4", 720, 720, 40, "test3", "C:/Users/sacha/Downloads/mc_server/nonmctestdir/");
     }
+
     //static ScheduledExecutorService vidprossesspool =  newScheduledThreadPool(12);
     public static void extractFramez(String videoFilePath, int width, int height, double frameRate, String name, String path) throws IOException, JCodecException {
         try (SeekableByteChannel channel = NIOUtils.readableFileChannel(videoFilePath)) {
@@ -44,9 +41,12 @@ public class videoprocessor {
                 if (Math.round(frameNumber % frameInterval) == 0) {
                     int finalSavedFrameNumber = savedFrameNumber.get();
                     Picture finalf = f;
-                    saveFrametoBytes(finalf, finalSavedFrameNumber, name, width, height, path);
+                    saveFrametoBytes(AWTUtil.toBufferedImage(finalf), finalSavedFrameNumber, name, width, height, path);
                     savedFrameNumber.getAndIncrement();
-                    if (finalSavedFrameNumber % 10 == 0){System.out.println(finalSavedFrameNumber);};
+                    if (finalSavedFrameNumber % 20 == 0) {
+                        System.out.println(finalSavedFrameNumber);
+                    }
+                    ;
                 }
                 frameNumber++;
             }
@@ -57,9 +57,9 @@ public class videoprocessor {
         }
     }
 
-    private static void saveFrametoBytes(Picture picture, int frameNumber, String name, int width, int height, String outdir) {
+    private static void saveFrametoBytes(BufferedImage image, int frameNumber, String name, int width, int height, String outdir) {
         try {
-            BufferedImage bufferedImage = Thumbnails.of(AWTUtil.toBufferedImage(picture))
+            BufferedImage bufferedImage = Thumbnails.of(image)
                     .size(width, height)
                     .keepAspectRatio(false)
                     .outputQuality(1.0)
@@ -79,5 +79,5 @@ public class videoprocessor {
             throw new RuntimeException("Failed to save frame_" + frameNumber + ".png", e);
         }
     }
-
 }
+

@@ -26,7 +26,8 @@ public class mapidlocations implements Listener {
     @EventHandler
     public void onHangingBreak(HangingBreakEvent event) {
         if (event.getEntity() instanceof ItemFrame || event.getEntity() instanceof GlowItemFrame && ((ItemFrame) event.getEntity()).getItem().getType() == Material.FILLED_MAP) {
-            maplocations.remove((long) ((MapMeta)((ItemFrame) event.getEntity()).getItem().getItemMeta()).getMapId());
+            MapMeta meta  = ((MapMeta)((ItemFrame) event.getEntity()).getItem().getItemMeta());
+            if (meta != null) maplocations.remove((long) meta.getMapId());
         }
     }
     @EventHandler
