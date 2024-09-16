@@ -42,6 +42,11 @@
       <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="dcm4che" />
+      <option name="name" value="dcm4che" />
+      <option name="url" value="https://maven.dcm4che.org/" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="jcenter" />
       <option name="name" value="jcenter" />
       <option name="url" value="https://jcenter.bintray.com/" />

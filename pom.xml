@@ -53,15 +53,16 @@
 
   <repositories>
       <repository>
+      <id>Central</id>
+      <name>Central</name>
+      <url>https://repo1.maven.org/maven2/</url>
+  </repository>
+      <repository>
           <id>jcenter</id>
           <name>jcenter</name>
           <url>https://jcenter.bintray.com/</url>
       </repository>
-      <repository>
-          <id>Central</id>
-          <name>Central</name>
-          <url>https://repo1.maven.org/maven2/</url>
-      </repository>
+
       <repository>
           <id>papermc-repo</id>
           <url>https://repo.papermc.io/repository/maven-public/</url>
@@ -74,15 +75,14 @@
           <id>dmulloy2-repo</id>
           <url>https://repo.dmulloy2.net/repository/public/</url>
       </repository>
+      <repository>
+          <id>dcm4che</id>
+          <url>https://maven.dcm4che.org/</url>
+      </repository>
 
   </repositories>
 
   <dependencies>
-      <dependency>
-          <groupId>org.imgscalr</groupId>
-          <artifactId>imgscalr-lib</artifactId>
-          <version>4.2</version>
-      </dependency>
       <dependency>
           <groupId>org.spigotmc</groupId>
           <artifactId>spigot</artifactId>
@@ -96,30 +96,142 @@
           <version>0.4.11</version>
       </dependency>
       <dependency>
-          <groupId>com.github.luben</groupId>
-          <artifactId>zstd-jni</artifactId>
-          <version>1.5.5-4</version>
-      </dependency>
-      <dependency>
           <groupId>com.sparkjava</groupId>
           <artifactId>spark-core</artifactId>
           <version>2.9.3</version>
-      </dependency>
-      <dependency>
-          <groupId>org.jcodec</groupId>
-          <artifactId>jcodec-javase</artifactId>
-          <version>0.2.5</version>
-      </dependency>
-      <dependency>
-          <groupId>org.jcodec</groupId>
-          <artifactId>jcodec</artifactId>
-          <version>0.2.5</version>
       </dependency>
       <dependency>
           <groupId>io.papermc.paper</groupId>
           <artifactId>paper-api</artifactId>
           <version>1.20.4-R0.1-SNAPSHOT</version>
           <scope>provided</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.bytedeco</groupId>
+          <artifactId>javacv-platform</artifactId>
+          <version>1.5.4</version>
+          <exclusions>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>artoolkitplus-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>artoolkitplus</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>flandmark-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>flandmark</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>tesseract-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>tesseract</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>flycapture-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>flycapture</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>leptonica-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>leptonica</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>openblas-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>openblas</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>librealsense-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>librealsense</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>librealsense2-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>librealsense2</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>libfreenect-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>libfreenect</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>libfreenect2-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>libfreenect2</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>libdc1394-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>libdc1394</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>gym-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>gym</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>videoinput-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>videoinput</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>opencv-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>opencv</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>openpose-platform</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.bytedeco</groupId>
+                  <artifactId>openpose</artifactId>
+              </exclusion>
+          </exclusions>
       </dependency>
   </dependencies>
 </project>

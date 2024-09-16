@@ -1,64 +1,59 @@
 package net.fractalinfinity.bettermaps;
 
-import net.coobird.thumbnailator.Thumbnails;
-import org.jcodec.api.FrameGrab;
-import org.jcodec.api.JCodecException;
-import org.jcodec.common.io.NIOUtils;
-import org.jcodec.common.io.SeekableByteChannel;
-import org.jcodec.common.model.Picture;
-import org.jcodec.scale.AWTUtil;
+
+import org.bytedeco.javacv.FFmpegFrameFilter;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.Java2DFrameConverter;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicInteger;
+
+;
 
 public class videoprocessor {
 
-    public static void main(String[] args) throws JCodecException, IOException {
-        extractFramez("C:/Users/sacha/Downloads/Rick Astley - Never Gonna Give You Up (Official Music Video) (1).mp4", 720, 720, 40, "test3", "C:/Users/sacha/Downloads/mc_server/nonmctestdir/");
+    public static void main(String[] args) throws IOException {
+        ExtractFrames("C:/Users/sacha/Downloads/rickroll.mp4", 720, 720, 40, "test3", "C:/Users/sacha/Downloads/mc_server/nonmctestdir/");
     }
 
     //static ScheduledExecutorService vidprossesspool =  newScheduledThreadPool(12);
-    public static void extractFramez(String videoFilePath, int width, int height, double frameRate, String name, String path) throws IOException, JCodecException {
-        try (SeekableByteChannel channel = NIOUtils.readableFileChannel(videoFilePath)) {
-            FrameGrab grab = FrameGrab.createFrameGrab(channel);
-            double videoFrameRate = grab.getVideoTrack().getMeta().getTotalFrames() / grab.getVideoTrack().getMeta().getTotalDuration();
-            double frameInterval = videoFrameRate / frameRate;
-            try {
-                for (File subfile : new File(path + name).listFiles()) {
-                    subfile.delete();
-                }
-            } catch (Exception ignored) {
-            }
+    public static void ExtractFrames(String videoFilePath, int width, int height, double frameRate, String name, String path) {
+        try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFilePath)) {
+            FFmpegFrameFilter framefilter = new FFmpegFrameFilter("fps=fps=" + frameRate+",scale=" + width + ":" + height,grabber.getImageWidth(),grabber.getImageHeight());
+            framefilter.setPixelFormat(grabber.getPixelFormat());
             int frameNumber = 0;
-            AtomicInteger savedFrameNumber = new AtomicInteger();
-            Picture f;
-            System.out.println(frameInterval);
-            while (null != (f = grab.getNativeFrame())) {
-                if (Math.round(frameNumber % frameInterval) == 0) {
-                    int finalSavedFrameNumber = savedFrameNumber.get();
-                    Picture finalf = f;
-                    saveFrametoBytes(AWTUtil.toBufferedImage(finalf), finalSavedFrameNumber, name, width, height, path);
-                    savedFrameNumber.getAndIncrement();
-                    if (finalSavedFrameNumber % 20 == 0) {
-                        System.out.println(finalSavedFrameNumber);
-                    }
-                    ;
+            org.bytedeco.javacv.Frame frame;
+            grabber.start();
+            framefilter.start();
+            Java2DFrameConverter converter = new Java2DFrameConverter();
+            while ((frame = grabber.grabFrame()) != null) {
+                framefilter.push(frame);
+                Frame pull = framefilter.pull();
+                if (pull == null || pull.samples == null || pull.image == null) continue;
+                BufferedImage image = converter.getBufferedImage(pull);
+                File outputDir = new File(path + name);
+                if (!outputDir.exists()) {
+                    outputDir.mkdirs();
                 }
+
+                File outputFile = new File(outputDir, frameNumber + ".png");
+                ImageUtils.ConvertAndWriteMinecraftImage(image, outputFile);
                 frameNumber++;
             }
 
-        } finally {
-            System.out.println("done");
-            Files.deleteIfExists(Path.of(videoFilePath));
+            grabber.stop();
+            grabber.release();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    private static void saveFrametoBytes(BufferedImage image, int frameNumber, String name, int width, int height, String outdir) {
-        try {
+
+
+        /*@Deprecated
+        private static void saveFrametoPng8(BufferedImage image, long frameNumber, String name, int width, int height, String outdir) throws IOException {
             BufferedImage bufferedImage = Thumbnails.of(image)
                     .size(width, height)
                     .keepAspectRatio(false)
@@ -75,9 +70,46 @@ public class videoprocessor {
             ImageUtils.ConvertAndWriteMinecraftImage(bufferedImage, outputFile);
             //ImageIO.write(ImageUtils.imageToimageBytes(bufferedImage),"png",outputFile);
             //System.out.println("Saved frame_" + frameNumber + ".png");
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to save frame_" + frameNumber + ".png", e);
-        }
     }
+    @Deprecated
+    public static void extractFramez(String videoFilePath, int width, int height, double frameRate, String name, String path) throws IOException, JCodecException {
+        try (SeekableByteChannel channel = NIOUtils.readableFileChannel(videoFilePath)) {
+            FrameGrab grab = FrameGrab.createFrameGrab(channel);
+            double videoFrameRate = grab.getVideoTrack().getMeta().getTotalFrames() / grab.getVideoTrack().getMeta().getTotalDuration();
+            double frameInterval = videoFrameRate / frameRate;
+            try {
+                for (File subfile : new File(path + name).listFiles()) {
+                    subfile.delete();
+                }
+            } catch (Exception ignored) {
+            }
+            int frameNumber = 0;
+            AtomicLong savedFrameNumber = new AtomicLong();
+            Picture f;
+            System.out.println(frameInterval);
+            while (null != (f = grab.getNativeFrame())) {
+                if (Math.round(frameNumber % frameInterval) == 0) {
+                    long finalSavedFrameNumber = savedFrameNumber.get();
+                    saveFrametoPng8(AWTUtil.toBufferedImage(f), finalSavedFrameNumber, name, width, height, path);
+                    savedFrameNumber.getAndIncrement();
+                    if (finalSavedFrameNumber % 20 == 0) {
+                        int finalFrameNumber = frameNumber;
+                        Bukkit.getOnlinePlayers().forEach(player -> player.sendMessage("Video upload frame: " + finalFrameNumber));
+
+                    }
+                }
+                frameNumber++;
+            }
+
+        } catch (JCodecException e) {
+            throw new RuntimeException(e);
+        } finally {
+            System.out.println("done");
+            Files.deleteIfExists(Path.of(videoFilePath));
+        }
+    }*/
 }
+
+
+
 

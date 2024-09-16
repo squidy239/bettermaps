@@ -1,6 +1,7 @@
 package net.fractalinfinity.bettermaps;
 
 import net.coobird.thumbnailator.Thumbnails;
+import org.bukkit.Bukkit;
 import spark.utils.IOUtils;
 
 import javax.servlet.MultipartConfigElement;
@@ -15,7 +16,7 @@ import java.util.stream.Collectors;
 
 import static net.fractalinfinity.bettermaps.Bettermaps.playingmedia;
 import static net.fractalinfinity.bettermaps.mapdraw.isoverlap;
-import static net.fractalinfinity.bettermaps.videoprocessor.extractFramez;
+import static net.fractalinfinity.bettermaps.videoprocessor.ExtractFrames;
 import static spark.Spark.*;
 
 public class web {
@@ -95,7 +96,8 @@ public class web {
                                 }
                             }
                             new File(mediapath + name + ".png").delete();
-                        extractFramez("mapimg/temp/" + name + ".mp4", Width, Height, 20, name, mediapath);
+                        ExtractFrames("mapimg/temp/" + name + ".mp4", Width, Height, 20, name, mediapath);
+                        Bukkit.broadcastMessage("upload done, now playing:"+name);
                         Bettermaps.PlayMedia(new File(mediapath + name),mapconfig, 20F);
                     uploadedFile.delete();}catch (Exception e) {System.out.println("Error prossesing video"+e);};
                     return "video upload prossesed";
