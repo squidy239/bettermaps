@@ -49,7 +49,7 @@ public class web {
         // Route to handle file upload
         post("/upload", "multipart/form-data", (request, response) -> {
             try {
-                long[][] mapconfig = table(IOUtils.toString(request.raw().getPart("mapconfig").getInputStream()), "|", ",");
+                int[][] mapconfig = table(IOUtils.toString(request.raw().getPart("mapconfig").getInputStream()), "|", ",");
                 String name = IOUtils.toString(request.raw().getPart("name").getInputStream()).replaceAll("[^a-zA-Z0-9]", "");
                 Part uploadedFile = request.raw().getPart("media");
                 int Width = mapconfig[0].length * 128;
@@ -63,9 +63,9 @@ public class web {
                             ImageUtils.ConvertAndWriteMinecraftImage(bufferedimage,new File(mediapath + name + ".png"));
                             //ImageIO.write(ImageUtils.imageToimageBytes(bufferedimage), "png", new File(mediapath + name + ".png"));
                         uploadedFile.delete();
-                            Enumeration<long[][]> keys = playingmedia.keys();
+                            Enumeration<int[][]> keys = playingmedia.keys();
                             while (keys.hasMoreElements()) {
-                                long[][] key = keys.nextElement();
+                                int[][] key = keys.nextElement();
                                 if (isoverlap(key, mapconfig)) {
                                     playingmedia.remove(key);
                                 }
@@ -88,9 +88,9 @@ public class web {
                         Files.copy(in, out);
                         uploadedFile.delete();
                     Files.createDirectories(Paths.get(mediapath + name));
-                            Enumeration<long[][]> keys = playingmedia.keys();
+                            Enumeration<int[][]> keys = playingmedia.keys();
                             while (keys.hasMoreElements()) {
-                                long[][] key = keys.nextElement();
+                                int[][] key = keys.nextElement();
                                 if (isoverlap(key, mapconfig)) {
                                     playingmedia.remove(key);
                                 }
@@ -112,13 +112,13 @@ public class web {
 
 
 }
-    public static long[][] table(String source, String outerdelim, String innerdelim) {
+    public static int[][] table(String source, String outerdelim, String innerdelim) {
         String[] sOuter = source.split("[" + outerdelim + "]");
         int size = sOuter.length;
-        long[][] result = new long[size][];
+        int[][] result = new int[size][];
         int count = 0;
         for (String line : sOuter) {
-            result[count] = Arrays.stream(line.split(innerdelim)).mapToLong( Long::parseLong).toArray();
+            result[count] = Arrays.stream(line.split(innerdelim)).mapToInt(Integer::parseInt).toArray();
             ++count;
         }
         return result;

@@ -6,8 +6,10 @@ import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.craftbukkit.v1_21_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapView;
 
 import java.awt.*;
@@ -19,16 +21,17 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class mapdraw {
-    public static List<Player> GetPlayersInMapRange(long[] ids, int distance) {
+    public static List<Player> GetPlayersInMapRange(int[] ids, int distance) {
         List<Player> allplayers = new ArrayList<>(Bukkit.getOnlinePlayers());
         List<Player> players = new ArrayList<>();
-        ConcurrentHashMap<Long, Location> maploc = mapidlocations.maplocations;
-        for (Long i : ids) {
+        ConcurrentHashMap<Integer, Location> maploc = mapidlocations.maplocations;
+        for (int i : ids) {
             if (maploc.containsKey(i)) {
                 for (Player p : allplayers) {
                     try {
-
-                    if (maploc.get(i).getWorld() == p.getWorld()) {
+                    if (p.getInventory().getItemInMainHand().getType() == Material.FILLED_MAP & ((MapMeta) p.getInventory().getItemInMainHand().getItemMeta()).getMapId() == i & !players.contains(p)){players.add(p);continue;}
+                    if (p.getInventory().getItemInOffHand().getType() == Material.FILLED_MAP & ((MapMeta) p.getInventory().getItemInOffHand().getItemMeta()).getMapId() == i & !players.contains(p)){players.add(p);continue;}
+                        if (maploc.get(i).getWorld() == p.getWorld()) {
                         if (maploc.get(i).distance(p.getLocation()) < distance && !players.contains(p)) {
                             players.add(p);
                         }
@@ -42,7 +45,7 @@ public class mapdraw {
         return players;
     }
 
-    public static void setmapbytes(byte[] bytes, List<Player> pl, long id, int x, int y) {
+    public static void setmapbytes(byte[] bytes, List<Player> pl, int id, int x, int y) {
         boolean islocked = true;
         Collection<MapDecoration> icons = new ArrayList<>();
         ClientboundMapItemDataPacket packet = new ClientboundMapItemDataPacket(new MapId((int) id), MapView.Scale.valueOf("CLOSEST").getValue(), islocked, icons, new MapItemSavedData.MapPatch(x, y, 128, 128, bytes));
@@ -51,16 +54,16 @@ public class mapdraw {
         }
     }
 
-    static long[] flatten(long[][] matrix) {
+    static int[] flatten(int[][] matrix) {
         int totalElements = 0;
-        for (long[] row : matrix) {
+        for (int[] row : matrix) {
             totalElements += row.length;
         }
 
-        long[] result = new long[totalElements];
+        int[] result = new int[totalElements];
         int index = 0;
-        for (long[] row : matrix) {
-            for (long element : row) {
+        for (int[] row : matrix) {
+            for (int element : row) {
                 result[index++] = element;
             }
         }
@@ -68,7 +71,7 @@ public class mapdraw {
         return result;
     }
 
-    public static void PutMinecraftImageOnMaps(BufferedImage imagebytes, List<Player> pl, long[][] ids) {
+    public static void PutMinecraftImageOnMaps(BufferedImage imagebytes, List<Player> pl, int[][] ids) {
         try {
             for (int l = 0; l < ids.length; l++) {
                 for (int i = 0; i < ids[l].length; i++) {
@@ -81,7 +84,7 @@ public class mapdraw {
         }
     }
 
-    public static boolean isoverlap(long[][] first, long[][] second) {
+    public static boolean isoverlap(int[][] first, int[][] second) {
         if (first == null || second == null || first.length == 0 || second.length == 0) {
             return false;
         }
