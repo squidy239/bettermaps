@@ -24,7 +24,7 @@ public class mapdraw {
     public static List<Player> GetPlayersInMapRange(int[] ids, int distance) {
         List<Player> allplayers = new ArrayList<>(Bukkit.getOnlinePlayers());
         List<Player> players = new ArrayList<>();
-        ConcurrentHashMap<Integer, Location> maploc = mapidlocations.maplocations;
+        ConcurrentHashMap<Integer, Location> maploc = EventListeners.maplocations;
         for (int i : ids) {
             if (maploc.containsKey(i)) {
                 for (Player p : allplayers) {

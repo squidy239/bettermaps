@@ -1,21 +1,31 @@
 package net.fractalinfinity.bettermaps;
 
+import com.google.common.collect.Sets;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 
 import javax.imageio.ImageIO;
+import javax.imageio.stream.FileImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
+import static net.fractalinfinity.bettermaps.Bettermaps.Screens;
 import static net.fractalinfinity.bettermaps.mapdraw.*;
 
 public class Screen implements Serializable {
+
+
     public int[][] ids;
     public String name;
     public short width;
@@ -27,13 +37,16 @@ public class Screen implements Serializable {
     public Float fps;
 
     public Screen(String screenname,int[][] screenids){
+        //destroy overlapping screens
+        for (Screen screen : Screens.values()) if(isoverlap(ids,screen.ids)) Screens.remove(screen.name);
         name = screenname;
         ids = screenids;
         height = (short) screenids.length;
         width = (short) screenids[0].length;
+        RemoveMapRenderers(ids);
     }
 
-    private boolean removemaprenderers(int[][] ids) {
+    private boolean RemoveMapRenderers(int[][] ids) {
         for (int[] ii : ids) {
             for (int id : ii) {
                 MapView mv = Bettermaps.mapviewdict.get(id);
@@ -47,7 +60,7 @@ public class Screen implements Serializable {
         return false;
     }
 
-    public void loadandstart() throws IOException {
+    public void LoadAndStart() throws IOException {
         switch (playingtype){
             case 0:break;
             case 1:
@@ -59,18 +72,15 @@ public class Screen implements Serializable {
         path = videopath;
         playingtype = 2;
         fps = videofps;
-        AtomicBoolean hasrenderers = new AtomicBoolean(true);
         Thread.ofVirtual().start(() -> {
             long frame = 0;
             List<Player> pl = GetPlayersInMapRange(flatten(ids), 32);
             while (playingtype == 2) {
                  try {
-                 long start = System.nanoTime();
-                 if (frame % 20 == 0) pl = GetPlayersInMapRange(flatten(ids), 32);
-                    //if (!pl.isEmpty()) {
-                 if (hasrenderers.get()) hasrenderers.set(removemaprenderers(ids));
-                 float ms = 0;
-                 if (!videopaused & !pl.isEmpty()){
+                    long start = System.nanoTime();
+                    if (frame % 20 == 0) pl = GetPlayersInMapRange(flatten(ids), 32);
+                    float ms = 0;
+                    if (!videopaused & !pl.isEmpty()){
                             File file = new File(path, "/" + frame + ".png");
                             if (!file.exists()) {
                                 frame = 0;
@@ -79,19 +89,35 @@ public class Screen implements Serializable {
                             BufferedImage image = ImageIO.read(file);
                             PutMinecraftImageOnMaps(image, pl, ids);
                             long end = System.nanoTime();
-                            ms = 0F;
                             ms = (end - start) / 1000000F < 0 ? ms : 0F;
                             //System.out.println("ms: "+ms);
                             frame++;
                         }
-                        Thread.sleep((long) (((1 / fps) * 1000) - ms));
+                        long sleeptime = (long) (((1 / fps) * 1000) - ms);
+                        //video running behind if sleeptime < 0
+                        if (sleeptime < 0) sleeptime = 0;
+                        Thread.sleep(sleeptime);
                     } catch (Exception e) {
                         Bukkit.getLogger().warning(e.toString());
                     }
-                //}
             }
         });
     }
-    public void LoadImage(String path){}
+    public void LoadImage(File path){
+        playingtype = 1;
+        Thread.ofVirtual().start(() -> {
+            while (playingtype == 1){
+                try{
+                    ArrayList<Player> players = (ArrayList<Player>) Bukkit.getOnlinePlayers();
+                    ShowImage(path,players);
+                    Thread.sleep(5000);
+                }catch (Exception e){Bukkit.getLogger().warning(e.toString());}
+            }
+        });
+    }
+    private void ShowImage(File path, ArrayList<Player> players) throws IOException {
+        BufferedImage image = ImageIO.read(new FileImageInputStream(path));
+        PutMinecraftImageOnMaps(image, players, ids);
+    }
 
 }

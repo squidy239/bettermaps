@@ -29,7 +29,7 @@ import static net.fractalinfinity.bettermaps.web.runweb;
 
 public final class Bettermaps extends JavaPlugin implements Listener {
     public static ConcurrentHashMap<Integer, MapView> mapviewdict = new ConcurrentHashMap<>();
-
+    public static ConcurrentHashMap<String, Screen> Screens  = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<int[][], List<Object>> playingmedia = new ConcurrentHashMap<>();
 
     @Override
@@ -52,7 +52,7 @@ public final class Bettermaps extends JavaPlugin implements Listener {
             System.out.println(Arrays.toString(loc));
             prossesedmapin.put(i, new Location(Bukkit.getWorld((String) loc[0]), (int) loc[1], (int) loc[2], (int) loc[3]));
         }
-        mapidlocations.initialize(prossesedmapin);
+        EventListeners.initialize(prossesedmapin);
         try {
             Files.createDirectories(Paths.get("mapimg/media"));
             Files.createDirectories(Paths.get("mapimg/temp"));
@@ -94,7 +94,10 @@ public final class Bettermaps extends JavaPlugin implements Listener {
             throw new RuntimeException(e);
         }
         getServer().getPluginManager().registerEvents(this, this);
-
+        int[][] id = {{100}};
+        Screen s = new Screen("test", id);
+        s.LoadImage(new File("C:/Users/sacha/Downloads/Your paragraph text.png"));
+        Screens.put(s.name,s);
     }
 
     @EventHandler
@@ -201,12 +204,12 @@ public final class Bettermaps extends JavaPlugin implements Listener {
             out.close();
             fileOut.close();
             ConcurrentHashMap<Integer, Object[]> maplocout = new ConcurrentHashMap<>();
-            for (int i : mapidlocations.maplocations.keySet()) {
+            for (int i : EventListeners.maplocations.keySet()) {
                 Object[] o = new Object[4];
-                o[0] = mapidlocations.maplocations.get(i).getWorld().getName();
-                o[1] = mapidlocations.maplocations.get(i).getBlockX();
-                o[2] = mapidlocations.maplocations.get(i).getBlockY();
-                o[3] = mapidlocations.maplocations.get(i).getBlockZ();
+                o[0] = EventListeners.maplocations.get(i).getWorld().getName();
+                o[1] = EventListeners.maplocations.get(i).getBlockX();
+                o[2] = EventListeners.maplocations.get(i).getBlockY();
+                o[3] = EventListeners.maplocations.get(i).getBlockZ();
                 maplocout.put(i, o);
             }
             FileOutputStream fileOut2 = new FileOutputStream("mapimg/maplocations.dat");
